@@ -35,7 +35,7 @@ If the default SSH user is not the root user, the default user must have passwor
 
 ```hcl
 module "icpprovision" {
-    source = "github.com/ibm-cloud-architecture/terraform-icp-deploy"
+    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy"
     
     icp-master = ["${softlayer_virtual_guest.icpmaster.ipv4_address}"]
     icp-worker = ["${softlayer_virtual_guest.icpworker.*.ipv4_address}"]

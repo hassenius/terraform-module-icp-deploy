@@ -20,14 +20,14 @@ declare -A cluster
 
 declare -A workers
 for worker in "${worker_ips[@]}"; do
-  workers[$worker]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key root@${worker} hostname)
+  workers[$worker]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key ${worker} hostname)
   cluster[$worker]=${workers[$worker]}
   printf "%s     %s\n" "$worker" "${cluster[$worker]}" >> /tmp/hosts
 done
 
 declare -A proxies
 for proxy in "${proxy_ips[@]}"; do
-  proxies[$proxy]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key root@${proxy} hostname)
+  proxies[$proxy]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key ${proxy} hostname)
   cluster[$proxy]=${proxies[$proxy]}
   printf "%s     %s\n" "$proxy" "${cluster[$proxy]}" >> /tmp/hosts
 done
@@ -39,7 +39,7 @@ for m in "${master_ips[@]}"; do
   then
     masters[$m]=$(hostname)
   else
-    masters[$m]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key root@${m} hostname)
+    masters[$m]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key ${m} hostname)
   fi
   cluster[$m]=${masters[$m]}
   printf "%s     %s\n" "$m" "${cluster[$m]}" >> /tmp/hosts
@@ -53,9 +53,9 @@ for node in "${!cluster[@]}"; do
   # No need to ssh to self
   if [[ "$node" == "${master_ips[0]}" ]]
   then
-    cat /tmp/hosts | cat - /etc/hosts | sponge /etc/hosts
+    cat /tmp/hosts | cat - /etc/hosts | sudo sponge /etc/hosts
   else
-    cat /tmp/hosts | ssh -i ${WORKDIR}/ssh_key root@${node} 'cat - /etc/hosts | sponge /etc/hosts'
+    cat /tmp/hosts | ssh -i ${WORKDIR}/ssh_key ${node} 'cat - /etc/hosts | sudo sponge /etc/hosts'
   fi
 done
 

@@ -1,9 +1,14 @@
 #!/bin/bash
+source /tmp/icp-bootmaster-scripts/functions.sh
 
 ICPDIR=/opt/ibm/cluster 
 NEWLIST=/tmp/workerlist.txt
 OLDLIST=/opt/ibm/cluster/workerlist.txt
-icpversion=$1
+
+# Figure out the version
+# This will populate $org $repo and $tag
+parse_icpversion ${1}
+
 
 # Compare new and old list of workers
 declare -a newlist
@@ -59,7 +64,7 @@ then
   ### Setup kubectl
   
   # use kubectl from container
-  kubectl="sudo docker run -e LICENSE=accept --net=host -v /opt/ibm/cluster:/installer/cluster -v /root:/root ibmcom/cfc-installer:${icpversion} kubectl"
+  kubectl="sudo docker run -e LICENSE=accept --net=host -v /opt/ibm/cluster:/installer/cluster -v /root:/root ${org}/${repo}:${tag} kubectl"
   
   $kubectl config set-cluster cfc-cluster --server=https://localhost:8001 --insecure-skip-tls-verify=true 
   $kubectl config set-context kubectl --cluster=cfc-cluster 
@@ -91,7 +96,7 @@ then
 
   list=$(IFS=, ; echo "${added[*]}")
   docker run -e LICENSE=accept --net=host -v "/opt/ibm/cluster":/installer/cluster \
-  ibmcom/cfc-installer:${icpversion} install -l ${list}  
+  ${org}/${repo}:${tag} install -l ${list}  
 fi
 
 

@@ -106,7 +106,7 @@ resource "null_resource" "icp-boot" {
       "/tmp/icp-bootmaster-scripts/load-image.sh ${var.icp-version} /tmp/${basename(var.image_file)}",
       "sudo mkdir -p /opt/ibm/cluster",
       "sudo chown ${var.ssh_user} /opt/ibm/cluster",
-      "docker run -e LICENSE=accept -v /opt/ibm:/data ibmcom/cfc-installer:${var.icp-version} cp -r cluster /data",
+      "/tmp/icp-bootmaster-scripts/copy_cluster_skel.sh ${var.icp-version}",
       "sudo chown ${var.ssh_user} /opt/ibm/cluster/*",
       "chmod 600 /opt/ibm/cluster/ssh_key",
       "sudo pip install pyyaml",
@@ -136,8 +136,9 @@ resource "null_resource" "icp-boot" {
   }  
   
   provisioner "remote-exec" {
-    scripts = [
-      "${path.module}/scripts/boot-master/generate_hostsfiles.sh",
+    inline = [
+      "/tmp/icp-bootmaster-scripts/generate_hostsfiles.sh",
+      "/tmp/icp-bootmaster-scripts/start_install.sh ${var.icp-version}"
       
     ]
   }
@@ -146,13 +147,13 @@ resource "null_resource" "icp-boot" {
   
   provisioner "remote-exec" {
     inline = [
-      "docker run -e LICENSE=accept --net=host -t -v /opt/ibm/cluster:/installer/cluster ibmcom/cfc-installer:${var.icp-version} install"
+      
     ]
   }
 }
 
 resource "null_resource" "icp-worker-scaler" {
-  depends_on = ["null_resource.icp-cluster"]
+  depends_on = ["null_resource.icp-cluster", "null_resource.icp-boot"]
   
   triggers {
     workers = "${join(",", var.icp-worker)}"

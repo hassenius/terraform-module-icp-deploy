@@ -11,7 +11,7 @@ If the default SSH user is not the root user, the default user must have passwor
 
 | variable  |  default  | required |  description    |
 |-----------|-----------|---------|--------|
-|  icp-version   |      |  Yes  |   Version of ICP to provision. For example 1.2.0, 1.2.0-ee, 2.1.0-beta1                | 
+|  icp-version   |      |  Yes  |   Version of ICP to provision. Format Can be tag, repo:tag or org/repo:tag. <br>For example `1.2.0`, `1.2.0-ee`, `icp-inception:2.1.0-beta-2`.<br>`ibmcom` is default org, `cfc-installer` is default repo  | 
 |  icp-master   |      |  Yes  |   IP address of ICP Masters. First master will also be boot master. CE edition only supports single master                 | 
 |  icp-worker   |      |  Yes  |   IP addresses of ICP Worker nodes.                | 
 |  cluster_size   |      |  Yes  |   Define total clustersize. Workaround for terraform issue #10857.                | 
@@ -68,6 +68,10 @@ Configuration file is generated from items in the following order
 1. config.yaml shipped with ICP (if config_strategy = merge, else blank)
 2. config.yaml specified in `icp_config_file`
 3. key: value items specified in `icp_configuration`
+
+Details on configuration items on ICP KnowledgeCenter
+* [ICP 1.2.0](https://www.ibm.com/support/knowledgecenter/SSBS6K_1.2.0/installing/config_yaml.html)
+* [ICP 2.1.0-Beta](https://www.ibm.com/support/knowledgecenter/SSBS6K_2.1.0/installing/config_yaml.html)
 
 
 ### Scaling

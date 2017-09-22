@@ -2,7 +2,7 @@
 This terraform module can be used to deploy IBM Cloud Private on any supported infrastructure vendor.
 Currently tested with Ubuntu 16.06 on SoftLayer VMs, deploying ICP 1.2.0 and 2.1.0-beta-1 Community Editions.
 
-### Pre-requisits
+### Pre-requisites
 
 If the default SSH user is not the root user, the default user must have password-less sudo access.
 
@@ -66,6 +66,21 @@ module "icpprovision" {
 Configuration file is generated from items in the following order
 
 1. config.yaml shipped with ICP (if config_strategy = merge, else blank)
-2. config.yaml specified in icp_config_file
-3. key: value items specified in icp_configuration
+2. config.yaml specified in `icp_config_file`
+3. key: value items specified in `icp_configuration`
+
+
+### Scaling
+The module supports automatic scaling of worker nodes.
+To scale simply add more nodes in the root resource supplying the `icp-worker` variable.
+You can see working examples for softlayer [in the icp-softlayer](https://github/ibm-cloud-architecture/terraform-icp-softlayer) repository
+
+Please note, because of how terraform handles module dependencies and triggers, it is currently necessary to retrigger the scaling resource **after scaling down** nodes.
+If you don't do this ICP will continue to report inactive nodes until the next scaling event.
+To manually trigger the removal of deleted node, run these commands:
+
+1. `terraform taint --module icpprovision null_resource.icp-worker-scaler`
+2. `terraform apply`
+
+
 

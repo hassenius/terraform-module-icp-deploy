@@ -11,15 +11,15 @@ resource "tls_private_key" "icpkey" {
 
 ## Actions that has to be taken on all nodes in the cluster
 resource "null_resource" "icp-cluster" {
-  
+
   count = "${var.cluster_size}"
   
   connection {
       host = "${element(local.icp-ips, count.index)}"
       user = "${var.ssh_user}"
       private_key = "${file(var.ssh_key)}"
-   }  
-
+  }
+   
   # Validate we can do passwordless sudo in case we are not root
   provisioner "remote-exec" {
     inline = [
@@ -150,3 +150,38 @@ resource "null_resource" "icp-boot" {
     ]
   }
 }
+
+resource "null_resource" "icp-worker-scaler" {
+  depends_on = ["null_resource.icp-cluster"]
+  
+  triggers {
+    workers = "${join(",", var.icp-worker)}"
+  }
+  
+  connection {
+    host = "${element(var.icp-master, 0)}"
+    user = "${var.ssh_user}"
+    private_key = "${file(var.ssh_key)}"
+  } 
+
+  provisioner "file" {
+    content = "${join(",", var.icp-worker)}"
+    destination = "/tmp/workerlist.txt"
+  }
+
+  provisioner "file" {
+    source      = "${path.module}/scripts/boot-master/scaleworkers.sh"
+    destination = "/tmp/icp-bootmaster-scripts/scaleworkers.sh"
+  }
+  
+  provisioner "remote-exec" {
+    inline = [
+      "chmod a+x /tmp/icp-bootmaster-scripts/scaleworkers.sh",
+      "/tmp/icp-bootmaster-scripts/scaleworkers.sh ${var.icp-version}"
+    ]
+  }
+    
+
+
+}
+

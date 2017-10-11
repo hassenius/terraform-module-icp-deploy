@@ -93,7 +93,3 @@ variable "config_strategy" {
   
 }
 
-
-locals {
-  icp-ips     = "${concat(var.icp-master, var.icp-proxy, var.icp-worker)}"
-}

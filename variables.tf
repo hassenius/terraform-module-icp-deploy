@@ -37,7 +37,7 @@ variable "image_file" {
 
 variable  "icp-version" {
   description = "Version of ICP to provision. For example 1.2.0, 1.2.0-ee, 2.1.0-beta1"
-  default = "2.1.0-beta3"
+  default = "2.1.0"
 }
 
 variable "ssh_user" {

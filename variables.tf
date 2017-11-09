@@ -35,6 +35,11 @@ variable "image_file" {
   default     = "/dev/null"
 }
 
+variable "image_location" {
+  description = "Alternative to image_file, if image is accessible to the new vm over nfs or http"
+  default     = "false"
+}
+
 variable  "icp-version" {
   description = "Version of ICP to provision. For example 1.2.0, 1.2.0-ee, 2.1.0-beta1"
   default = "2.1.0"

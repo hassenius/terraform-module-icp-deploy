@@ -27,7 +27,14 @@ then
     nfs_mount=$(dirname ${image_location:4})
     image_file="${sourcedir}/$(basename ${image_location})"
     mkdir -p ${sourcedir}
+    # Mount 
     sudo mount.nfs $nfs_mount $sourcedir
+  elif [[ "${image_location:0:4}" == "http" ]]
+  then
+    # Figure out what we should name the file
+    filename="ibm-cloud-private.${tag}.tar.gz"
+    wget -o ${source}/${filename} "${image_location#http:}"
+    image_file="${source}/${filename}"
   fi
 fi
 

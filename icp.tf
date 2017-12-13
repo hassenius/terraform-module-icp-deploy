@@ -18,6 +18,7 @@ resource "null_resource" "icp-cluster" {
       host = "${element(local.icp-ips, count.index)}"
       user = "${var.ssh_user}"
       private_key = "${file(var.ssh_key)}"
+      agent = "${var.ssh_agent}"
   }
    
   # Validate we can do passwordless sudo in case we are not root
@@ -66,6 +67,7 @@ resource "null_resource" "icp-boot" {
     host = "${element(var.icp-master, 0)}"
     user = "${var.ssh_user}"
     private_key = "${file(var.ssh_key)}"
+    agent = "${var.ssh_agent}"
   } 
 
   
@@ -163,6 +165,7 @@ resource "null_resource" "icp-worker-scaler" {
     host = "${element(var.icp-master, 0)}"
     user = "${var.ssh_user}"
     private_key = "${file(var.ssh_key)}"
+    agent = "${var.ssh_agent}"
   } 
 
   provisioner "file" {

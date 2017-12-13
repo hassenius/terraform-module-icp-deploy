@@ -50,6 +50,11 @@ variable "ssh_key" {
   default     = "~/.ssh/id_rsa"
 }
 
+variable "ssh_agent" {
+  description = "Enable or disable SSH Agent. Can correct some connectivity issues. Default: true"
+  default     = true
+}
+
 variable "generate_key" {
   description = "Whether to generate a new ssh key for use by ICP Boot Master to communicate with other nodes"
   default     = false

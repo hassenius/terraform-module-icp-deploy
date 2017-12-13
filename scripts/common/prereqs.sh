@@ -20,17 +20,19 @@ fi
 echo "Operating System is $OSLEVEL"
 
 ubuntu_install(){
-  #Update the source resgitry
+
   sudo sysctl -w vm.max_map_count=262144
-  #Update hostname
-#  sudo hostname $HOSTNAME
-#  sudo echo $HOSTNAME > /etc/hostname
   sudo apt-get -y update
   sudo apt-get install -y apt-transport-https nfs-common ca-certificates curl software-properties-common
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
   sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-  sudo apt-get update -y
-  sudo apt-get -y upgrade
+  
+  ## Attempt to avoid probelems when dpkg requires configuration
+  export DEBIAN_FRONTEND=noninteractive
+  export DEBIAN_PRIORITY=critical
+  sudo -E apt-get -y update
+  sudo -E apt-get -y -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" upgrade
+  
   sudo apt-get install -y python unzip moreutils python-pip
   sudo service iptables stop
   sudo ufw disable

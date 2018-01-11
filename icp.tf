@@ -15,10 +15,11 @@ resource "null_resource" "icp-cluster" {
   count = "${var.cluster_size}"
   
   connection {
-      host = "${element(local.icp-ips, count.index)}"
-      user = "${var.ssh_user}"
-      private_key = "${file(var.ssh_key)}"
-      agent = "${var.ssh_agent}"
+      host          = "${element(local.icp-ips, count.index)}"
+      user          = "${var.ssh_user}"
+      private_key   = "${file(var.ssh_key)}"
+      agent         = "${var.ssh_agent}"
+      bastion_host  = "${var.bastion_host}"
   }
    
   # Validate we can do passwordless sudo in case we are not root
@@ -64,10 +65,11 @@ resource "null_resource" "icp-boot" {
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
-    host = "${element(var.icp-master, 0)}"
-    user = "${var.ssh_user}"
-    private_key = "${file(var.ssh_key)}"
-    agent = "${var.ssh_agent}"
+    host          = "${element(var.icp-master, 0)}"
+    user          = "${var.ssh_user}"
+    private_key   = "${file(var.ssh_key)}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
   } 
 
   

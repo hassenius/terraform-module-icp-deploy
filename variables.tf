@@ -60,6 +60,12 @@ variable "ssh_agent" {
   default     = true
 }
 
+variable "bastion_host" {
+  description = "Specify hostname or IP to connect to nodes through a SSH bastion host. Assumes same SSH key and username as cluster nodes"
+  default     = ""
+}
+
+
 variable "generate_key" {
   description = "Whether to generate a new ssh key for use by ICP Boot Master to communicate with other nodes"
   default     = false

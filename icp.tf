@@ -137,7 +137,15 @@ resource "null_resource" "icp-boot" {
   provisioner "file" {
     content = "${join(",", var.icp-proxy)}"
     destination = "/opt/ibm/cluster/proxylist.txt"
-  }  
+  }
+
+  # Since the file provisioner deals badly with empty lists, we'll create the optional management nodes differently
+  # Later we may refactor to use this method for all node types for consistency
+  provisioner "remote-exec" {
+    inline = [
+      "echo -n ${join(",", var.icp-management)} > /opt/ibm/cluster/managementlist.txt"
+    ]
+  }
   
   provisioner "remote-exec" {
     inline = [

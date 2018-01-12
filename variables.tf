@@ -25,6 +25,13 @@ variable "icp-proxy" {
   description =  "IP addresses of ICP Proxy nodes."
 }
 
+variable "icp-management" {
+  type        = "list"
+  description = "IP addresses of ICP Management Nodes, if management is to be separated from master nodes. Optional"
+  default     = []
+}
+
+
 variable "enterprise-edition" {
   description = "Whether to provision enterprise edition (EE) or community edition (CE). EE requires image files to be provided"
   default     = false

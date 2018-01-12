@@ -45,8 +45,19 @@ for m in "${master_ips[@]}"; do
   printf "%s     %s\n" "$m" "${cluster[$m]}" >> /tmp/hosts
 done
 
-
-
+# Add management nodes if separate from master nodes
+if [[ -s ${WORKDIR}/managementlist.txt ]]
+then
+  declare -a management_ips
+  IFS=', ' read -r -a management_ips <<< $(cat ${WORKDIR}/managementlist.txt)
+  
+  declare -A mngrs
+  for m in "${management_ips[@]}"; do
+    mngrs[$m]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key ${m} hostname)
+    cluster[$m]=${mngrs[$m]}
+    printf "%s     %s\n" "$m" "${cluster[$m]}" >> /tmp/hosts
+  done
+fi
 
 ## Update all hostfiles in all nodes in the cluster
 for node in "${!cluster[@]}"; do
@@ -65,13 +76,24 @@ for master in "${master_ips[@]}"; do
   echo $master >> ${ICPDIR}/hosts
 done
 
+echo  >> ${ICPDIR}/hosts
 echo '[worker]' >> ${ICPDIR}/hosts
 for worker in "${worker_ips[@]}"; do
   echo $worker >> ${ICPDIR}/hosts
 done
 
+echo  >> ${ICPDIR}/hosts
 echo '[proxy]' >> ${ICPDIR}/hosts
 for proxy in "${proxy_ips[@]}"; do
   echo $proxy >> ${ICPDIR}/hosts
 done
 
+# Add management host entries if separate from master nodes
+if [[ ! -z ${management_ips} ]]
+then
+  echo  >> ${ICPDIR}/hosts
+  echo '[management]' >> ${ICPDIR}/hosts
+  for m in "${management_ips[@]}"; do
+    echo $m >> ${ICPDIR}/hosts
+  done
+fi

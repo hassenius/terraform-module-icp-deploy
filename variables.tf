@@ -37,6 +37,11 @@ variable "enterprise-edition" {
   default     = false
 }
 
+variable "parallell-image-pull" {
+  description = "Download and pull docker images on all nodes in parallell before starting ICP installation."
+  default     = false
+}
+
 variable "image_file" {
   description = "Filename of image. Only required for enterprise edition"
   default     = "/dev/null"
@@ -125,4 +130,5 @@ variable "config_strategy" {
 
 locals {
   icp-ips     = "${concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management)}"
+  cluster_size = "${length(concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management))}"
 }

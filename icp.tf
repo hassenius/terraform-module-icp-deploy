@@ -58,30 +58,19 @@ resource "null_resource" "icp-cluster" {
 }
 
 
-## Actions that needs to be taken on boot master only
-# First make sure scripts and configuration files are copied
-resource "null_resource" "icp-boot" {
-
+resource "null_resource" "icp-docker" {
   depends_on = ["null_resource.icp-cluster"]
 
-  # The first master is always the boot master where we run provisioning jobs from
+  count = "${var.parallell-image-pull ? var.cluster_size : "1"}"
+
+  # Boot node is always the first entry in the IP list, so if we're not pulling in parallell this will only happen on boot node
   connection {
-    host          = "${element(var.icp-master, 0)}"
+    host          = "${element(local.icp-ips, count.index)}"
     user          = "${var.ssh_user}"
     private_key   = "${file(var.ssh_key)}"
     agent         = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
-  } 
-
-  
-  # If this is enterprise edition we'll need to copy the image file over and load it in local repository
-  // We'll need to find another workaround while tf does not support count for this
-  provisioner "file" {
-      # count = "${var.enterprise-edition ? 1 : 0}"
-      source = "${var.enterprise-edition ? var.image_file : "/dev/null" }"
-      destination = "/tmp/${basename(var.image_file)}"
-  }
-  
+  }   
 
   provisioner "remote-exec" {
     inline = [
@@ -95,6 +84,61 @@ resource "null_resource" "icp-boot" {
     source      = "${path.module}/scripts/boot-master/"
     destination = "/tmp/icp-bootmaster-scripts"
   }
+
+  # Make sure scripts are executable and docker installed
+  provisioner "remote-exec" {
+    inline = [
+      "chmod a+x /tmp/icp-bootmaster-scripts/*.sh",
+      "/tmp/icp-bootmaster-scripts/install-docker.sh \"${var.docker_package_location}\" "
+    ]
+  }  
+}
+
+resource "null_resource" "icp-image" {
+  depends_on = ["null_resource.icp-docker"]
+
+  count = "${var.parallell-image-pull ? var.cluster_size : "1"}"
+
+  # Boot node is always the first entry in the IP list, so if we're not pulling in parallell this will only happen on boot node
+  connection {
+    host          = "${element(local.icp-ips, count.index)}"
+    user          = "${var.ssh_user}"
+    private_key   = "${file(var.ssh_key)}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
+  }   
+
+  # If this is enterprise edition we'll need to copy the image file over and load it in local repository
+  // We'll need to find another workaround while tf does not support count for this
+  provisioner "file" {
+      # count = "${var.enterprise-edition ? 1 : 0}"
+      source = "${var.enterprise-edition ? var.image_file : "/dev/null" }"
+      destination = "/tmp/${basename(var.image_file)}"
+  }
+  
+  provisioner "remote-exec" {
+    inline = [
+      "echo \"Loading image ${var.icp-version}\"",
+      "/tmp/icp-bootmaster-scripts/load-image.sh ${var.icp-version} /tmp/${basename(var.image_file)} \"${var.image_location}\" "
+    ]
+  }  
+}
+
+
+# First make sure scripts and configuration files are copied
+resource "null_resource" "icp-boot" {
+
+  depends_on = ["null_resource.icp-image"]
+
+  # The first master is always the boot master where we run provisioning jobs from
+  connection {
+    host          = "${element(var.icp-master, 0)}"
+    user          = "${var.ssh_user}"
+    private_key   = "${file(var.ssh_key)}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
+  } 
+
   
   # store config yaml if it was specified
   provisioner "file" {
@@ -107,14 +151,6 @@ resource "null_resource" "icp-boot" {
     content     = "${jsonencode(var.icp_configuration)}"
     destination = "/tmp/items-config.yaml"
   }
-
-  # Make sure scripts are executable and docker installed
-  provisioner "remote-exec" {
-    inline = [
-      "chmod a+x /tmp/icp-bootmaster-scripts/*.sh",
-      "/tmp/icp-bootmaster-scripts/install-docker.sh \"${var.docker_package_location}\" "
-    ]
-  }
 }
 
 
@@ -125,7 +161,7 @@ resource "null_resource" "icp-config" {
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
-    host          = "${element(var.icp-master, 0)}"
+    host          = "${element(local.icp-ips, 0)}"
     user          = "${var.ssh_user}"
     private_key   = "${file(var.ssh_key)}"
     agent         = "${var.ssh_agent}"
@@ -134,8 +170,6 @@ resource "null_resource" "icp-config" {
 
   provisioner "remote-exec" {
     inline = [
-      "echo \"Loading image ${var.icp-version}\"",
-      "/tmp/icp-bootmaster-scripts/load-image.sh ${var.icp-version} /tmp/${basename(var.image_file)} \"${var.image_location}\" ",
       "/tmp/icp-bootmaster-scripts/copy_cluster_skel.sh ${var.icp-version}",
       "sudo chown ${var.ssh_user} /opt/ibm/cluster/*",
       "chmod 600 /opt/ibm/cluster/ssh_key",

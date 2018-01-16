@@ -106,6 +106,8 @@ resource "null_resource" "icp-boot" {
 
   provisioner "remote-exec" {
     inline = [
+      "sudo systemctl enable docker",
+      "sudo systemctl start docker",
       "chmod a+x /tmp/icp-bootmaster-scripts/*.sh",
 #      "/tmp/icp-bootmaster-scripts/load-image.sh ${var.icp-version} /tmp/${basename(var.image_file)} ${var.image_location}",
       "sudo mkdir -p /opt/ibm/cluster",

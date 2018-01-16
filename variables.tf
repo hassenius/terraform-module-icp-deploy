@@ -17,7 +17,7 @@ variable "icp-master" {
 
 variable "icp-management" { 
   type        = "list"
-  description =  "IP address of ICP Masters. First master will also be boot master. CE edition only supports single master "
+  description =  "IP address of ICP Management Nodes. CE edition only supports single master "
 }
 
 variable "icp-worker" { 

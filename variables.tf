@@ -30,8 +30,20 @@ variable "icp-proxy" {
   description =  "IP addresses of ICP Proxy nodes."
 }
 
+variable "icp-management" {
+  type        = "list"
+  description = "IP addresses of ICP Management Nodes, if management is to be separated from master nodes. Optional"
+  default     = []
+}
+
+
 variable "enterprise-edition" {
   description = "Whether to provision enterprise edition (EE) or community edition (CE). EE requires image files to be provided"
+  default     = false
+}
+
+variable "parallell-image-pull" {
+  description = "Download and pull docker images on all nodes in parallell before starting ICP installation."
   default     = false
 }
 
@@ -43,6 +55,11 @@ variable "image_file" {
 variable "image_location" {
   description = "Alternative to image_file, if image is accessible to the new vm over nfs or http"
   default     = "false"
+}
+
+variable "docker_package_location" {
+  description = "http or nfs location of docker installer which ships with ICP. Option for RHEL which does not support docker-ce"
+  default     = ""
 }
 
 variable  "icp-version" {
@@ -117,5 +134,6 @@ variable "config_strategy" {
 
 
 locals {
-  icp-ips     = "${concat(var.icp-master, var.icp-proxy, var.icp-worker)}"
+  icp-ips     = "${concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management)}"
+  cluster_size = "${length(concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management))}"
 }

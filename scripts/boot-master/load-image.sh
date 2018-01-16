@@ -32,9 +32,9 @@ then
   elif [[ "${image_location:0:4}" == "http" ]]
   then
     # Figure out what we should name the file
-    filename="ibm-cloud-private.${tag}.tar.gz"
+    filename="ibm-cloud-private-x86_64-${tag%-ee}.tar.gz"
     mkdir -p ${sourcedir}
-    wget -o ${sourcedir}/${filename} "${image_location#http:}"
+    wget --continue -O ${sourcedir}/${filename} "${image_location#http:}"
     image_file="${sourcedir}/${filename}"
   fi
 fi

@@ -34,7 +34,7 @@ then
     # Figure out what we should name the file
     filename="ibm-cloud-private.${tag}.tar.gz"
     mkdir -p ${sourcedir}
-    wget -o ${sourcedir}/${filename} "${image_location#http:}"
+    wget -O ${sourcedir}/${filename} "${image_location#http:}"
     image_file="${sourcedir}/${filename}"
   fi
 fi

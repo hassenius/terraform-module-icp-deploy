@@ -59,6 +59,7 @@ resource "null_resource" "icp-cluster" {
 
 
 ## Actions that needs to be taken on boot master only
+# First make sure scripts and configuration files are copied
 resource "null_resource" "icp-boot" {
 
   depends_on = ["null_resource.icp-cluster"]
@@ -84,9 +85,12 @@ resource "null_resource" "icp-boot" {
 
   provisioner "remote-exec" {
     inline = [
-      "mkdir -p /tmp/icp-bootmaster-scripts"
+      "mkdir -p /tmp/icp-bootmaster-scripts",
+      "sudo mkdir -p /opt/ibm/cluster",
+      "sudo chown ${var.ssh_user} /opt/ibm/cluster"
     ]
   }
+  
   provisioner "file" {
     source      = "${path.module}/scripts/boot-master/"
     destination = "/tmp/icp-bootmaster-scripts"
@@ -104,13 +108,34 @@ resource "null_resource" "icp-boot" {
     destination = "/tmp/items-config.yaml"
   }
 
+  # Make sure scripts are executable and docker installed
   provisioner "remote-exec" {
     inline = [
       "chmod a+x /tmp/icp-bootmaster-scripts/*.sh",
       "/tmp/icp-bootmaster-scripts/install-docker.sh \"${var.docker_package_location}\" "
-      "/tmp/icp-bootmaster-scripts/load-image.sh ${var.icp-version} /tmp/${basename(var.image_file)} ${var.image_location}",
-      "sudo mkdir -p /opt/ibm/cluster",
-      "sudo chown ${var.ssh_user} /opt/ibm/cluster",
+    ]
+  }
+}
+
+
+
+# Generate all necessary configuration files, load image files, etc
+resource "null_resource" "icp-config" {
+  depends_on = ["null_resource.icp-boot"]
+
+  # The first master is always the boot master where we run provisioning jobs from
+  connection {
+    host          = "${element(var.icp-master, 0)}"
+    user          = "${var.ssh_user}"
+    private_key   = "${file(var.ssh_key)}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
+  } 
+
+  provisioner "remote-exec" {
+    inline = [
+      "echo \"Loading image ${var.icp-version}\"",
+      "/tmp/icp-bootmaster-scripts/load-image.sh ${var.icp-version} /tmp/${basename(var.image_file)} \"${var.image_location}\" ",
       "/tmp/icp-bootmaster-scripts/copy_cluster_skel.sh ${var.icp-version}",
       "sudo chown ${var.ssh_user} /opt/ibm/cluster/*",
       "chmod 600 /opt/ibm/cluster/ssh_key",
@@ -147,26 +172,50 @@ resource "null_resource" "icp-boot" {
       "echo -n ${join(",", var.icp-management)} > /opt/ibm/cluster/managementlist.txt"
     ]
   }
+}
+
+# Generate the hosts files on the cluster
+resource "null_resource" "icp-generate-hosts-files" {
+  depends_on = ["null_resource.icp-config"]
+
+  # The first master is always the boot master where we run provisioning jobs from
+  connection {
+    host          = "${element(var.icp-master, 0)}"
+    user          = "${var.ssh_user}"
+    private_key   = "${file(var.ssh_key)}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
+  } 
   
   provisioner "remote-exec" {
     inline = [
-      "/tmp/icp-bootmaster-scripts/generate_hostsfiles.sh",
-      "/tmp/icp-bootmaster-scripts/start_install.sh ${var.icp-version}"
-      
+      "/tmp/icp-bootmaster-scripts/generate_hostsfiles.sh"
     ]
-  }
-  
-  # Check if var.ssh_user is root. If not add ansible_become lines 
-  
+  } 
+}
+
+# Start the installer
+resource "null_resource" "icp-install" {
+  depends_on = ["null_resource.icp-generate-hosts-files"]
+
+  # The first master is always the boot master where we run provisioning jobs from
+  connection {
+    host          = "${element(var.icp-master, 0)}"
+    user          = "${var.ssh_user}"
+    private_key   = "${file(var.ssh_key)}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
+  } 
+
   provisioner "remote-exec" {
     inline = [
-      
+      "/tmp/icp-bootmaster-scripts/start_install.sh ${var.icp-version}"
     ]
   }
 }
 
 resource "null_resource" "icp-worker-scaler" {
-  depends_on = ["null_resource.icp-cluster", "null_resource.icp-boot"]
+  depends_on = ["null_resource.icp-cluster", "null_resource.icp-install"]
   
   triggers {
     workers = "${join(",", var.icp-worker)}"
@@ -177,6 +226,7 @@ resource "null_resource" "icp-worker-scaler" {
     user = "${var.ssh_user}"
     private_key = "${file(var.ssh_key)}"
     agent = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
   } 
 
   provisioner "file" {

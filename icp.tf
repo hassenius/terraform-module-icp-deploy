@@ -17,7 +17,7 @@ resource "null_resource" "icp-cluster" {
   connection {
       host          = "${element(local.icp-ips, count.index)}"
       user          = "${var.ssh_user}"
-      private_key   = "${file(var.ssh_key)}"
+      private_key   = "${var.ssh_key}"
       agent         = "${var.ssh_agent}"
       bastion_host  = "${var.bastion_host}"
   }
@@ -67,7 +67,7 @@ resource "null_resource" "icp-boot" {
   connection {
     host          = "${element(var.icp-master, 0)}"
     user          = "${var.ssh_user}"
-    private_key   = "${file(var.ssh_key)}"
+    private_key   = "${var.ssh_key}"
     agent         = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
   } 
@@ -166,7 +166,7 @@ resource "null_resource" "icp-worker-scaler" {
   connection {
     host = "${element(var.icp-master, 0)}"
     user = "${var.ssh_user}"
-    private_key = "${file(var.ssh_key)}"
+    private_key = "${var.ssh_key}"
     agent = "${var.ssh_agent}"
   } 
 

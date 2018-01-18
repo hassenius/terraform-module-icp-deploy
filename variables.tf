@@ -68,8 +68,19 @@ variable "ssh_user" {
 }
 
 variable "ssh_key" {
-  description = "Private key corresponding to the public key that the cloud servers are provisioned with"
+  description = "Private key corresponding to the public key that the cloud servers are provisioned with. DEPRECATED. Use ssh_key_file or ssh_key_base64"
   default     = "~/.ssh/id_rsa"
+}
+
+variable "ssh_key_base64" {
+  description = "base64 encoded content of private ssh key"
+  default     = ""
+}
+
+variable "ssh_key_file" {
+  description = "Location of private ssh key. i.e. ~/.ssh/id_rsa"
+  default     = ""
+  
 }
 
 variable "ssh_agent" {
@@ -129,6 +140,8 @@ variable "config_strategy" {
 
 
 locals {
-  icp-ips     = "${concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management)}"
-  cluster_size = "${length(concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management))}"
+  icp-ips       = "${concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management)}"
+  cluster_size  = "${length(concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management))}"
+  ssh_key       = "${var.ssh_key_base64 == "" ? file(coalesce(var.ssh_key_file, "/dev/null")) : base64decode(var.ssh_key_base64)}"
+  
 }

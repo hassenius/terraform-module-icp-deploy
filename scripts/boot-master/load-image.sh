@@ -43,8 +43,10 @@ if [[ -s "$image_file" ]]
 then
   tar xf ${image_file} -O | sudo docker load
 else
-  # If we don't have an image file locally we'll pull from docker hub registry
-  docker pull ${org}/${repo}:${tag}
+  if [ -z $(docker images -q ${org}/${repo}:${tag}) ]; then
+    # If we don't have an image file locally we'll pull from docker hub registry
+    docker pull ${org}/${repo}:${tag}
+  fi 
 fi
 
 

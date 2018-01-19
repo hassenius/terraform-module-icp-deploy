@@ -58,21 +58,27 @@ resource "null_resource" "icp-cluster" {
   }
 }
 
-
-## Actions that needs to be taken on boot master only
-resource "null_resource" "icp-boot" {
-
+resource "null_resource" "icp-docker" {
   depends_on = ["null_resource.icp-cluster"]
 
-  # The first master is always the boot master where we run provisioning jobs from
+  count = "${var.parallell-image-pull ? var.cluster_size : "1"}"
+
+  # Boot node is always the first entry in the IP list, so if we're not pulling in parallell this will only happen on boot node
   connection {
-    host          = "${element(var.icp-master, 0)}"
+    host          = "${element(local.icp-ips, count.index)}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
-  } 
+  }   
 
+  provisioner "remote-exec" {
+    inline = [
+      "mkdir -p /tmp/icp-bootmaster-scripts",
+      "sudo mkdir -p /opt/ibm/cluster",
+      "sudo chown ${var.ssh_user} /opt/ibm/cluster"
+    ]
+  }
   
   provisioner "file" {
     source      = "${path.module}/scripts/boot-master/"
@@ -88,6 +94,7 @@ resource "null_resource" "icp-boot" {
   }  
 }
 
+
 resource "null_resource" "icp-image" {
   depends_on = ["null_resource.icp-docker"]
 
@@ -102,6 +109,17 @@ resource "null_resource" "icp-image" {
     bastion_host  = "${var.bastion_host}"
   }   
 
+  provisioner "remote-exec" {
+    inline = [
+      "mkdir -p /tmp/icp-bootmaster-scripts",
+    ]
+  }
+ 
+  provisioner "file" {
+    source      = "${path.module}/scripts/boot-master/"
+    destination = "/tmp/icp-bootmaster-scripts"
+  }
+
   # If this is enterprise edition we'll need to copy the image file over and load it in local repository
   // We'll need to find another workaround while tf does not support count for this
   provisioner "file" {
@@ -110,14 +128,13 @@ resource "null_resource" "icp-image" {
       destination = "/tmp/${basename(var.image_file)}"
   }
   
-
   provisioner "remote-exec" {
     inline = [
-      "mkdir -p /tmp/icp-bootmaster-scripts"
+      "echo \"Loading image ${var.icp-version}\"",
+      "/tmp/icp-bootmaster-scripts/load-image.sh ${var.icp-version} /tmp/${basename(var.image_file)} \"${var.image_location}\" "
     ]
   }  
 }
-
 
 # First make sure scripts and configuration files are copied
 resource "null_resource" "icp-boot" {
@@ -163,10 +180,6 @@ resource "null_resource" "icp-config" {
 
   provisioner "remote-exec" {
     inline = [
-      "chmod a+x /tmp/icp-bootmaster-scripts/*.sh",
-      "/tmp/icp-bootmaster-scripts/load-image.sh ${var.icp-version} /tmp/${basename(var.image_file)} ${var.image_location}",
-      "sudo mkdir -p /opt/ibm/cluster",
-      "sudo chown ${var.ssh_user} /opt/ibm/cluster",
       "/tmp/icp-bootmaster-scripts/copy_cluster_skel.sh ${var.icp-version}",
       "sudo chown ${var.ssh_user} /opt/ibm/cluster/*",
       "chmod 600 /opt/ibm/cluster/ssh_key",
@@ -194,13 +207,13 @@ resource "null_resource" "icp-config" {
   provisioner "file" {
     content = "${join(",", var.icp-proxy)}"
     destination = "/opt/ibm/cluster/proxylist.txt"
-  }  
-  
+  }
+
+  # Since the file provisioner deals badly with empty lists, we'll create the optional management nodes differently
+  # Later we may refactor to use this method for all node types for consistency
   provisioner "remote-exec" {
     inline = [
-      "/tmp/icp-bootmaster-scripts/generate_hostsfiles.sh",
-      "/tmp/icp-bootmaster-scripts/start_install.sh ${var.icp-version}"
-      
+      "echo -n ${join(",", var.icp-management)} > /opt/ibm/cluster/managementlist.txt"
     ]
   }
 }

@@ -27,7 +27,7 @@ then
     nfs_mount=$(dirname ${image_location:4})
     image_file="${sourcedir}/$(basename ${image_location})"
     mkdir -p ${sourcedir}
-    # Mount 
+    # Mount
     sudo mount.nfs $nfs_mount $sourcedir
   elif [[ "${image_location:0:4}" == "http" ]]
   then
@@ -43,11 +43,8 @@ if [[ -s "$image_file" ]]
 then
   tar xf ${image_file} -O | sudo docker load
 else
-  if [ -z $(docker images -q ${org}/${repo}:${tag}) ]; then
-    # If we don't have an image file locally we'll pull from docker hub registry
+  if [[ -z $(docker images -q ${org}/${repo}:${tag}) ]]; then
+    # If we don't have an image locally we'll pull from docker hub registry
     docker pull ${org}/${repo}:${tag}
-  fi 
+  fi
 fi
-
-
-

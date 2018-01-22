@@ -1,5 +1,4 @@
 
-
 # Generate a new key if this is required
 resource "tls_private_key" "icpkey" {
   count       = "${var.generate_key ? 1 : 0}"
@@ -58,6 +57,7 @@ resource "null_resource" "icp-cluster" {
   }
 }
 
+
 resource "null_resource" "icp-docker" {
   depends_on = ["null_resource.icp-cluster"]
 
@@ -94,7 +94,6 @@ resource "null_resource" "icp-docker" {
   }
 }
 
-
 resource "null_resource" "icp-image" {
   depends_on = ["null_resource.icp-docker"]
 
@@ -109,17 +108,6 @@ resource "null_resource" "icp-image" {
     bastion_host  = "${var.bastion_host}"
   }
 
-  provisioner "remote-exec" {
-    inline = [
-      "mkdir -p /tmp/icp-bootmaster-scripts",
-    ]
-  }
-
-  provisioner "file" {
-    source      = "${path.module}/scripts/boot-master/"
-    destination = "/tmp/icp-bootmaster-scripts"
-  }
-
   # If this is enterprise edition we'll need to copy the image file over and load it in local repository
   // We'll need to find another workaround while tf does not support count for this
   provisioner "file" {
@@ -131,11 +119,11 @@ resource "null_resource" "icp-image" {
   provisioner "remote-exec" {
     inline = [
       "echo \"Loading image ${var.icp-version}\"",
-      "chmod a+x /tmp/icp-bootmaster-scripts/load-image.sh",
       "/tmp/icp-bootmaster-scripts/load-image.sh ${var.icp-version} /tmp/${basename(var.image_file)} \"${var.image_location}\" "
     ]
   }
 }
+
 
 # First make sure scripts and configuration files are copied
 resource "null_resource" "icp-boot" {
@@ -150,6 +138,7 @@ resource "null_resource" "icp-boot" {
     agent         = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
   }
+
 
   # store config yaml if it was specified
   provisioner "file" {
@@ -260,7 +249,7 @@ resource "null_resource" "icp-install" {
 }
 
 resource "null_resource" "icp-worker-scaler" {
-  depends_on = ["null_resource.icp-cluster", "null_resource.icp-boot"]
+  depends_on = ["null_resource.icp-cluster", "null_resource.icp-install"]
 
   triggers {
     workers = "${join(",", var.icp-worker)}"
@@ -271,6 +260,7 @@ resource "null_resource" "icp-worker-scaler" {
     user = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
   }
 
   provisioner "file" {

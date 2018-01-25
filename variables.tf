@@ -1,15 +1,4 @@
 # Username and password for the initial admin user
-variable "icpuser" { 
-  type        = "string"
-  description = "Username of initial admin user. Default: Admin"
-  default     = "admin" 
-}
-variable "icppassword" { 
-  type        = "string"
-  description = "Password of initial admin user. Default: Admin"
-  default     = "admin" 
-}
-
 variable "icp-master" { 
   type        = "list"
   description =  "IP address of ICP Masters. First master will also be boot master. CE edition only supports single master "
@@ -84,7 +73,7 @@ variable "ssh_key_file" {
 }
 
 variable "ssh_agent" {
-  description = "Enable or disable SSH Agent. Can correct some connectivity issues. Default: true"
+  description = "Enable or disable SSH Agent. Can correct some connectivity issues. Default: true (enabled)"
   default     = true
 }
 
@@ -96,7 +85,7 @@ variable "bastion_host" {
 
 variable "generate_key" {
   description = "Whether to generate a new ssh key for use by ICP Boot Master to communicate with other nodes"
-  default     = false
+  default     = true
 }
 
 variable "icp_pub_key" {

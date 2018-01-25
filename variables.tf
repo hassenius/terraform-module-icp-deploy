@@ -99,14 +99,14 @@ variable "generate_key" {
   default     = false
 }
 
-variable "icp_pub_keyfile" {
+variable "icp_pub_key" {
   description = "Public ssh key for ICP Boot master to connect to ICP Cluster. Only use when generate_key = false"
-  default     = "/dev/null"
+  default     = ""
 }
 
-variable "icp_priv_keyfile" {
+variable "icp_priv_key" {
   description = "Private ssh key for ICP Boot master to connect to ICP Cluster. Only use when generate_key = false"
-  default     = "/dev/null"
+  default     = ""
 }
 
 variable "cluster_size" {

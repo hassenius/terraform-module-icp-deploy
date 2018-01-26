@@ -47,7 +47,8 @@ If the default SSH user is not the root user, the default user must have passwor
 
 ## Usage example
 
-### Community Edition
+#### Community Edition
+
 ```hcl
 module "icpprovision" {
     source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.0.0"
@@ -74,7 +75,9 @@ module "icpprovision" {
 } 
 ```
 
-### Enterprise Edition
+#### Enterprise Edition
+
+```hcl
 module "icpprovision" {
     source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.0.0"
     

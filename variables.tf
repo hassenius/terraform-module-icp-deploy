@@ -127,6 +127,13 @@ variable "config_strategy" {
   
 }
 
+variable "hooks" {
+  description = "Hooks into different stages in the cluster setup process"
+  type        = "map"
+  default     = {
+    "cluster-preconfig" = ["echo foo", "echo bar"]
+  }
+}
 
 locals {
   icp-ips       = "${concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management)}"

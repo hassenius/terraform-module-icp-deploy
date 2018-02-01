@@ -1,7 +1,7 @@
 #!/bin/bash
 source /tmp/icp-bootmaster-scripts/functions.sh
 
-ICPDIR=/opt/ibm/cluster 
+ICPDIR=/opt/ibm/cluster
 NEWLIST=/tmp/workerlist.txt
 OLDLIST=/opt/ibm/cluster/workerlist.txt
 
@@ -60,33 +60,33 @@ done
 if [[ -n ${removed} ]]
 then
   echo "removing workers: ${removed[@]}"
-  
+
   ### Setup kubectl
-  
+
   # use kubectl from container
-  kubectl="sudo docker run -e LICENSE=accept --net=host -v /opt/ibm/cluster:/installer/cluster -v /root:/root ${org}/${repo}:${tag} kubectl"
-  
-  $kubectl config set-cluster cfc-cluster --server=https://localhost:8001 --insecure-skip-tls-verify=true 
-  $kubectl config set-context kubectl --cluster=cfc-cluster 
-  $kubectl config set-credentials user --client-certificate=/installer/cluster/cfc-certs/kubecfg.crt --client-key=/installer/cluster/cfc-certs/kubecfg.key 
-  $kubectl config set-context kubectl --user=user 
+  kubectl="sudo docker run -e LICENSE=accept --net=host -v /opt/ibm/cluster:/installer/cluster -v /root:/root ${registry}${registry:+/}${org}/${repo}:${tag} kubectl"
+
+  $kubectl config set-cluster cfc-cluster --server=https://localhost:8001 --insecure-skip-tls-verify=true
+  $kubectl config set-context kubectl --cluster=cfc-cluster
+  $kubectl config set-credentials user --client-certificate=/installer/cluster/cfc-certs/kubecfg.crt --client-key=/installer/cluster/cfc-certs/kubecfg.key
+  $kubectl config set-context kubectl --user=user
   $kubectl config use-context kubectl
-  
+
   list=$(IFS=, ; echo "${removed[*]}")
- 
+
   for ip in "${removed[@]}"; do
     $kubectl delete node $ip
     sudo sed -i "/^${ip} /d" /etc/hosts
     sudo sed -i "/^${ip} /d" /opt/ibm/cluster/hosts
   done
-  
+
 fi
 
 if [[ -n ${added} ]]
 then
   echo "Adding: ${added[@]}"
   # Collect node names
-  
+
   # Update /etc/hosts
   for node in "${added[@]}" ; do
     nodename=$(ssh -o StrictHostKeyChecking=no -i ${ICPDIR}/ssh_key ${node} hostname)
@@ -96,7 +96,7 @@ then
 
   list=$(IFS=, ; echo "${added[*]}")
   docker run -e LICENSE=accept --net=host -v "/opt/ibm/cluster":/installer/cluster \
-  ${org}/${repo}:${tag} install -l ${list}  
+  ${registry}${registry:+/}${org}/${repo}:${tag} install -l ${list}  
 fi
 
 

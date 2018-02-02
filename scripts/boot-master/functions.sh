@@ -10,11 +10,12 @@ function parse_icpversion() {
   then
     # Save username password if specified for registry
     r=$(echo ${1} | cut -d/ -f1)
-    if [[ $r =~ .*:.*:.* ]]
+    if [[ $r =~ .*@.* ]]
     then
-      username=${r%%:*}
-      password=$(echo ${r} | cut -d':' -f2)
-      registry=$(echo ${r} | cut -d':' -f3-)
+      local up=${r%%@*}
+      username=${up%%:*}
+      password=${up##*:}
+      registry=${r##*@}
     else
       registry=$(echo ${1} | cut -d/ -f1)
     fi

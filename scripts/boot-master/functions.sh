@@ -8,8 +8,9 @@ function parse_icpversion() {
   # Determine if registry is also specified
   if [[ $1 =~ .*/.*/.* ]]
   then
+    # Save the registry section of the string
+    local r=$(echo ${1} | cut -d/ -f1)
     # Save username password if specified for registry
-    r=$(echo ${1} | cut -d/ -f1)
     if [[ $r =~ .*@.* ]]
     then
       local up=${r%%@*}
@@ -17,7 +18,7 @@ function parse_icpversion() {
       password=${up##*:}
       registry=${r##*@}
     else
-      registry=$(echo ${1} | cut -d/ -f1)
+      registry=${r}
     fi
     org=$(echo ${1} | cut -d/ -f2)
   elif [[ $1 =~ .*/.* ]]

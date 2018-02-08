@@ -1,15 +1,15 @@
 # Username and password for the initial admin user
-variable "icp-master" { 
+variable "icp-master" {
   type        = "list"
   description =  "IP address of ICP Masters. First master will also be boot master. CE edition only supports single master "
 }
 
-variable "icp-worker" { 
+variable "icp-worker" {
   type        = "list"
   description =  "IP addresses of ICP Worker nodes."
 }
 
-variable "icp-proxy" { 
+variable "icp-proxy" {
   type        = "list"
   description =  "IP addresses of ICP Proxy nodes."
 }
@@ -69,7 +69,7 @@ variable "ssh_key_base64" {
 variable "ssh_key_file" {
   description = "Location of private ssh key. i.e. ~/.ssh/id_rsa"
   default     = ""
-  
+
 }
 
 variable "ssh_agent" {
@@ -103,7 +103,7 @@ variable "cluster_size" {
 }
 
 /*
-  ICP Configuration 
+  ICP Configuration
   Configuration file is generated from items in the following order
   1. config.yaml shipped with ICP (if config_strategy = merge, else blank)
   2. config.yaml specified in icp_config_file
@@ -124,13 +124,13 @@ variable "icp_configuration" {
 variable "config_strategy" {
   description  = "Strategy for original config.yaml shipped with ICP. Default is merge, everything else means override"
   default      = "merge"
-  
+
 }
 
 
 locals {
-  icp-ips       = "${concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management)}"
+  icp-ips       = "${concat(var.icp-master, var.icp-proxy, var.icp-management, var.icp-worker)}"
   cluster_size  = "${length(concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management))}"
   ssh_key       = "${var.ssh_key_base64 == "" ? file(coalesce(var.ssh_key_file, "/dev/null")) : base64decode(var.ssh_key_base64)}"
-  
+
 }

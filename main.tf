@@ -30,7 +30,7 @@ resource "null_resource" "icp-cluster" {
   }
 
   provisioner "file" {
-      content = "${var.generate_key ? tls_private_key.icpkey.public_key_openssh : file(var.icp_pub_keyfile)}"
+      content = "${var.generate_key ? tls_private_key.icpkey.public_key_openssh : var.icp_pub_key}"
       destination = "/tmp/icpkey"
 
   }
@@ -180,7 +180,7 @@ resource "null_resource" "icp-config" {
 
   # Copy the provided or generated private key
   provisioner "file" {
-      content = "${var.generate_key ? tls_private_key.icpkey.private_key_pem : file(var.icp_priv_keyfile)}"
+      content = "${var.generate_key ? tls_private_key.icpkey.private_key_pem : var.icp_priv_key}"
       destination = "/opt/ibm/cluster/ssh_key"
   }
 

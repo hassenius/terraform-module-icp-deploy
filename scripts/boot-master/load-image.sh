@@ -16,7 +16,7 @@ source /tmp/icp-bootmaster-scripts/functions.sh
 # Figure out the version
 # This will populate $org $repo and $tag
 parse_icpversion ${image}
-echo "org=$org repo=$repo tag=$tag"
+echo "registry=${registry:-not specified} org=$org repo=$repo tag=$tag"
 
 if [[ "${image_location}" != "false" ]]
 then
@@ -43,8 +43,13 @@ if [[ -s "$image_file" ]]
 then
   tar xf ${image_file} -O | sudo docker load
 else
-  if [[ -z $(docker images -q ${org}/${repo}:${tag}) ]]; then
-    # If we don't have an image locally we'll pull from docker hub registry
-    docker pull ${org}/${repo}:${tag}
+  # If we don't have an image locally we'll pull from docker registry
+  if [[ -z $(docker images -q ${registry}${registry:+/}${org}/${repo}:${tag}) ]]; then
+    # If this is a private registry we may need to log in
+    if [[ ! -z "$username" ]]; then
+      docker login -u ${username} -p ${password} ${registry}
+    fi
+    # ${registry}${registry:+/} adds <registry>/ only if registry is specified
+    docker pull ${registry}${registry:+/}${org}/${repo}:${tag}
   fi
 fi

@@ -9,9 +9,29 @@ resource "tls_private_key" "icpkey" {
   }
 }
 
+## Cluster Pre-config hook
+resource "null_resource" "icp-cluster-preconfig-hook" {
+  count = "${contains(keys(var.hooks), "cluster-preconfig") ? var.cluster_size : 0}"
+
+  connection {
+      host          = "${element(local.icp-ips, count.index)}"
+      user          = "${var.ssh_user}"
+      private_key   = "${local.ssh_key}"
+      agent         = "${var.ssh_agent}"
+      bastion_host  = "${var.bastion_host}"
+  }
+
+  # Run cluster-preconfig commands
+  provisioner "remote-exec" {
+    inline = [
+      "${var.hooks["cluster-preconfig"]}"
+    ]
+  }
+}
+
 ## Actions that has to be taken on all nodes in the cluster
 resource "null_resource" "icp-cluster" {
-
+  depends_on = ["null_resource.icp-cluster-preconfig-hook"]
   count = "${var.cluster_size}"
 
   connection {
@@ -57,9 +77,52 @@ resource "null_resource" "icp-cluster" {
   }
 }
 
+## Cluster postconfig hook
+resource "null_resource" "icp-cluster-postconfig-hook" {
+  depends_on = ["null_resource.icp-cluster"]
+  count = "${contains(keys(var.hooks), "cluster-postconfig") ? var.cluster_size : 0}"
+
+  connection {
+      host          = "${element(local.icp-ips, count.index)}"
+      user          = "${var.ssh_user}"
+      private_key   = "${local.ssh_key}"
+      agent         = "${var.ssh_agent}"
+      bastion_host  = "${var.bastion_host}"
+  }
+
+  # Run cluster-postconfig commands
+  provisioner "remote-exec" {
+    inline = [
+      "${var.hooks["cluster-postconfig"]}"
+    ]
+  }
+}
+
+
+# First hook for Boot node
+resource "null_resource" "icp-boot-preconfig" {
+  depends_on = ["null_resource.icp-cluster-postconfig-hook", "null_resource.icp-cluster"]
+  count = "${contains(keys(var.hooks), "boot-preconfig") ? 1 : 0}"
+
+  # The first master is always the boot master where we run provisioning jobs from
+  connection {
+    host          = "${element(var.icp-master, 0)}"
+    user          = "${var.ssh_user}"
+    private_key   = "${local.ssh_key}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
+  }
+
+  # Run stage hook commands
+  provisioner "remote-exec" {
+    inline = [
+      "${var.hooks["boot-preconfig"]}"
+    ]
+  }
+}
 
 resource "null_resource" "icp-docker" {
-  depends_on = ["null_resource.icp-cluster"]
+  depends_on = ["null_resource.icp-boot-preconfig", "null_resource.icp-cluster"]
 
   count = "${var.parallell-image-pull ? var.cluster_size : "1"}"
 
@@ -71,6 +134,7 @@ resource "null_resource" "icp-docker" {
     agent         = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
   }
+
 
   provisioner "remote-exec" {
     inline = [
@@ -208,6 +272,8 @@ resource "null_resource" "icp-config" {
   }
 }
 
+
+
 # Generate the hosts files on the cluster
 resource "null_resource" "icp-generate-hosts-files" {
   depends_on = ["null_resource.icp-config"]
@@ -228,9 +294,10 @@ resource "null_resource" "icp-generate-hosts-files" {
   }
 }
 
-# Start the installer
-resource "null_resource" "icp-install" {
+# Boot node hook
+resource "null_resource" "icp-preinstall-hook" {
   depends_on = ["null_resource.icp-generate-hosts-files"]
+  count = "${contains(keys(var.hooks), "preinstall") ? 1 : 0}"
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
@@ -241,9 +308,53 @@ resource "null_resource" "icp-install" {
     bastion_host  = "${var.bastion_host}"
   }
 
+  # Run stage hook commands
+  provisioner "remote-exec" {
+    inline = [
+      "${var.hooks["preinstall"]}"
+    ]
+  }
+}
+
+# Start the installer
+resource "null_resource" "icp-install" {
+  depends_on = ["null_resource.icp-preinstall-hook", "null_resource.icp-generate-hosts-files"]
+
+  # The first master is always the boot master where we run provisioning jobs from
+  connection {
+    host          = "${element(var.icp-master, 0)}"
+    user          = "${var.ssh_user}"
+    private_key   = "${local.ssh_key}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
+  }
+
+
   provisioner "remote-exec" {
     inline = [
       "/tmp/icp-bootmaster-scripts/start_install.sh ${var.icp-version}"
+    ]
+  }
+}
+
+# Hook for Boot node
+resource "null_resource" "icp-postinstall-hook" {
+  depends_on = ["null_resource.icp-install"]
+  count = "${contains(keys(var.hooks), "postinstall") ? 1 : 0}"
+
+  # The first master is always the boot master where we run provisioning jobs from
+  connection {
+    host          = "${element(var.icp-master, 0)}"
+    user          = "${var.ssh_user}"
+    private_key   = "${local.ssh_key}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
+  }
+
+  # Run stage hook commands
+  provisioner "remote-exec" {
+    inline = [
+      "${var.hooks["postinstall"]}"
     ]
   }
 }

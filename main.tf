@@ -3,17 +3,16 @@
 resource "tls_private_key" "icpkey" {
   count       = "${var.generate_key ? 1 : 0}"
   algorithm   = "RSA"
-  
+
   provisioner "local-exec" {
     command = "cat > privatekey.pem <<EOL\n${tls_private_key.icpkey.private_key_pem}\nEOL"
   }
 }
 
-## Actions that has to be taken on all nodes in the cluster
-resource "null_resource" "icp-cluster" {
+## Cluster Pre-config hook
+resource "null_resource" "icp-cluster-preconfig-hook" {
+  count = "${contains(keys(var.hooks), "cluster-preconfig") ? var.cluster_size : 0}"
 
-  count = "${var.cluster_size}"
-  
   connection {
       host          = "${element(local.icp-ips, count.index)}"
       user          = "${var.ssh_user}"
@@ -21,7 +20,28 @@ resource "null_resource" "icp-cluster" {
       agent         = "${var.ssh_agent}"
       bastion_host  = "${var.bastion_host}"
   }
-   
+
+  # Run cluster-preconfig commands
+  provisioner "remote-exec" {
+    inline = [
+      "${var.hooks["cluster-preconfig"]}"
+    ]
+  }
+}
+
+## Actions that has to be taken on all nodes in the cluster
+resource "null_resource" "icp-cluster" {
+  depends_on = ["null_resource.icp-cluster-preconfig-hook"]
+  count = "${var.cluster_size}"
+
+  connection {
+      host          = "${element(local.icp-ips, count.index)}"
+      user          = "${var.ssh_user}"
+      private_key   = "${local.ssh_key}"
+      agent         = "${var.ssh_agent}"
+      bastion_host  = "${var.bastion_host}"
+  }
+
   # Validate we can do passwordless sudo in case we are not root
   provisioner "remote-exec" {
     inline = [
@@ -32,9 +52,9 @@ resource "null_resource" "icp-cluster" {
   provisioner "file" {
       content = "${var.generate_key ? tls_private_key.icpkey.public_key_openssh : var.icp_pub_key}"
       destination = "/tmp/icpkey"
-  
+
   }
-  
+
   provisioner "remote-exec" {
     inline = [
       "mkdir -p /tmp/icp-common-scripts"
@@ -57,9 +77,52 @@ resource "null_resource" "icp-cluster" {
   }
 }
 
+## Cluster postconfig hook
+resource "null_resource" "icp-cluster-postconfig-hook" {
+  depends_on = ["null_resource.icp-cluster"]
+  count = "${contains(keys(var.hooks), "cluster-postconfig") ? var.cluster_size : 0}"
+
+  connection {
+      host          = "${element(local.icp-ips, count.index)}"
+      user          = "${var.ssh_user}"
+      private_key   = "${local.ssh_key}"
+      agent         = "${var.ssh_agent}"
+      bastion_host  = "${var.bastion_host}"
+  }
+
+  # Run cluster-postconfig commands
+  provisioner "remote-exec" {
+    inline = [
+      "${var.hooks["cluster-postconfig"]}"
+    ]
+  }
+}
+
+
+# First hook for Boot node
+resource "null_resource" "icp-boot-preconfig" {
+  depends_on = ["null_resource.icp-cluster-postconfig-hook", "null_resource.icp-cluster"]
+  count = "${contains(keys(var.hooks), "boot-preconfig") ? 1 : 0}"
+
+  # The first master is always the boot master where we run provisioning jobs from
+  connection {
+    host          = "${element(var.icp-master, 0)}"
+    user          = "${var.ssh_user}"
+    private_key   = "${local.ssh_key}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
+  }
+
+  # Run stage hook commands
+  provisioner "remote-exec" {
+    inline = [
+      "${var.hooks["boot-preconfig"]}"
+    ]
+  }
+}
 
 resource "null_resource" "icp-docker" {
-  depends_on = ["null_resource.icp-cluster"]
+  depends_on = ["null_resource.icp-boot-preconfig", "null_resource.icp-cluster"]
 
   count = "${var.parallell-image-pull ? var.cluster_size : "1"}"
 
@@ -70,7 +133,8 @@ resource "null_resource" "icp-docker" {
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
-  }   
+  }
+
 
   provisioner "remote-exec" {
     inline = [
@@ -79,7 +143,7 @@ resource "null_resource" "icp-docker" {
       "sudo chown ${var.ssh_user} /opt/ibm/cluster"
     ]
   }
-  
+
   provisioner "file" {
     source      = "${path.module}/scripts/boot-master/"
     destination = "/tmp/icp-bootmaster-scripts"
@@ -91,7 +155,7 @@ resource "null_resource" "icp-docker" {
       "chmod a+x /tmp/icp-bootmaster-scripts/*.sh",
       "/tmp/icp-bootmaster-scripts/install-docker.sh \"${var.docker_package_location}\" "
     ]
-  }  
+  }
 }
 
 resource "null_resource" "icp-image" {
@@ -106,7 +170,7 @@ resource "null_resource" "icp-image" {
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
-  }   
+  }
 
   # If this is enterprise edition we'll need to copy the image file over and load it in local repository
   // We'll need to find another workaround while tf does not support count for this
@@ -115,13 +179,13 @@ resource "null_resource" "icp-image" {
       source = "${var.enterprise-edition ? var.image_file : "/dev/null" }"
       destination = "/tmp/${basename(var.image_file)}"
   }
-  
+
   provisioner "remote-exec" {
     inline = [
       "echo \"Loading image ${var.icp-version}\"",
       "/tmp/icp-bootmaster-scripts/load-image.sh ${var.icp-version} /tmp/${basename(var.image_file)} \"${var.image_location}\" "
     ]
-  }  
+  }
 }
 
 
@@ -137,15 +201,15 @@ resource "null_resource" "icp-boot" {
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
-  } 
+  }
 
-  
+
   # store config yaml if it was specified
   provisioner "file" {
     source       = "${var.icp_config_file}"
     destination = "/tmp/config.yaml"
   }
-  
+
   # JSON dump the contents of icp_configuration items
   provisioner "file" {
     content     = "${jsonencode(var.icp_configuration)}"
@@ -166,7 +230,7 @@ resource "null_resource" "icp-config" {
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
-  } 
+  }
 
   provisioner "remote-exec" {
     inline = [
@@ -183,12 +247,12 @@ resource "null_resource" "icp-config" {
       content = "${var.generate_key ? tls_private_key.icpkey.private_key_pem : var.icp_priv_key}"
       destination = "/opt/ibm/cluster/ssh_key"
   }
-  
+
   provisioner "file" {
     content = "${join(",", var.icp-worker)}"
     destination = "/opt/ibm/cluster/workerlist.txt"
   }
-  
+
   provisioner "file" {
     content = "${join(",", var.icp-master)}"
     destination = "/opt/ibm/cluster/masterlist.txt"
@@ -208,6 +272,8 @@ resource "null_resource" "icp-config" {
   }
 }
 
+
+
 # Generate the hosts files on the cluster
 resource "null_resource" "icp-generate-hosts-files" {
   depends_on = ["null_resource.icp-config"]
@@ -219,18 +285,19 @@ resource "null_resource" "icp-generate-hosts-files" {
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
-  } 
-  
+  }
+
   provisioner "remote-exec" {
     inline = [
       "/tmp/icp-bootmaster-scripts/generate_hostsfiles.sh"
     ]
-  } 
+  }
 }
 
-# Start the installer
-resource "null_resource" "icp-install" {
+# Boot node hook
+resource "null_resource" "icp-preinstall-hook" {
   depends_on = ["null_resource.icp-generate-hosts-files"]
+  count = "${contains(keys(var.hooks), "preinstall") ? 1 : 0}"
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
@@ -239,7 +306,29 @@ resource "null_resource" "icp-install" {
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
-  } 
+  }
+
+  # Run stage hook commands
+  provisioner "remote-exec" {
+    inline = [
+      "${var.hooks["preinstall"]}"
+    ]
+  }
+}
+
+# Start the installer
+resource "null_resource" "icp-install" {
+  depends_on = ["null_resource.icp-preinstall-hook", "null_resource.icp-generate-hosts-files"]
+
+  # The first master is always the boot master where we run provisioning jobs from
+  connection {
+    host          = "${element(var.icp-master, 0)}"
+    user          = "${var.ssh_user}"
+    private_key   = "${local.ssh_key}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
+  }
+
 
   provisioner "remote-exec" {
     inline = [
@@ -248,20 +337,42 @@ resource "null_resource" "icp-install" {
   }
 }
 
+# Hook for Boot node
+resource "null_resource" "icp-postinstall-hook" {
+  depends_on = ["null_resource.icp-install"]
+  count = "${contains(keys(var.hooks), "postinstall") ? 1 : 0}"
+
+  # The first master is always the boot master where we run provisioning jobs from
+  connection {
+    host          = "${element(var.icp-master, 0)}"
+    user          = "${var.ssh_user}"
+    private_key   = "${local.ssh_key}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
+  }
+
+  # Run stage hook commands
+  provisioner "remote-exec" {
+    inline = [
+      "${var.hooks["postinstall"]}"
+    ]
+  }
+}
+
 resource "null_resource" "icp-worker-scaler" {
   depends_on = ["null_resource.icp-cluster", "null_resource.icp-install"]
-  
+
   triggers {
     workers = "${join(",", var.icp-worker)}"
   }
-  
+
   connection {
     host = "${element(var.icp-master, 0)}"
     user = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
-  } 
+  }
 
   provisioner "file" {
     content = "${join(",", var.icp-worker)}"
@@ -272,15 +383,14 @@ resource "null_resource" "icp-worker-scaler" {
     source      = "${path.module}/scripts/boot-master/scaleworkers.sh"
     destination = "/tmp/icp-bootmaster-scripts/scaleworkers.sh"
   }
-  
+
   provisioner "remote-exec" {
     inline = [
       "chmod a+x /tmp/icp-bootmaster-scripts/scaleworkers.sh",
       "/tmp/icp-bootmaster-scripts/scaleworkers.sh ${var.icp-version}"
     ]
   }
-    
+
 
 
 }
-

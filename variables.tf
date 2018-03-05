@@ -130,9 +130,7 @@ variable "config_strategy" {
 variable "hooks" {
   description = "Hooks into different stages in the cluster setup process"
   type        = "map"
-  default     = {
-    "cluster-preconfig" = ["echo foo", "echo bar"]
-  }
+  default     = {}
 }
 
 locals {

@@ -130,13 +130,11 @@ variable "config_strategy" {
 variable "hooks" {
   description = "Hooks into different stages in the cluster setup process"
   type        = "map"
-  default     = {
-    "cluster-preconfig" = ["echo foo", "echo bar"]
-  }
+  default     = {}
 }
 
 locals {
-  icp-ips       = "${concat(var.icp-master, var.icp-proxy, var.icp-management, var.icp-worker)}"
+  icp-ips       = "${distinct(concat(var.icp-master, var.icp-proxy, var.icp-management, var.icp-worker))}"
   cluster_size  = "${length(concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management))}"
   ssh_key       = "${var.ssh_key_base64 == "" ? file(coalesce(var.ssh_key_file, "/dev/null")) : base64decode(var.ssh_key_base64)}"
 

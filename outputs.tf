@@ -12,7 +12,7 @@ output "icp_private_key" {
 output "install_complete" {
   depends_on  = ["null_resource.icp-install"]
   description = "Boolean value that is set to true when ICP installation process is completed"
-  value       = true
+  value       = "true"
 }
 
 output "icp_version" {

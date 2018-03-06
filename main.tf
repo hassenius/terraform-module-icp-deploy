@@ -1,7 +1,7 @@
 
 # Generate a new key if this is required
 resource "tls_private_key" "icpkey" {
-  count       = "${var.generate_key ? 1 : 0}"
+  # count       = "${var.generate_key ? 1 : 0}" # Generate the key anyways, since the output logic needs it for interpolation
   algorithm   = "RSA"
 
   provisioner "local-exec" {

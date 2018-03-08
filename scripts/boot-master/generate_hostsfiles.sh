@@ -7,6 +7,9 @@ ICPDIR=$WORKDIR
 # Make sure ssh key has correct permissions set before using
 chmod 600 ${WORKDIR}/ssh_key
 
+# Global array variable for holding all cluster ip/hostnames
+declare -A cluster
+
 # Functions for "traditional" groups (master, proxy, worker, management)
 read_from_groupfiles() {
   ## First compile a list of all nodes in the cluster with ip addresses and associated hostnames
@@ -20,8 +23,6 @@ read_from_groupfiles() {
   IFS=', ' read -r -a proxy_ips <<< $(cat ${WORKDIR}/proxylist.txt)
 
   ## First gather all the hostnames and link them with ip addresses
-  declare -A cluster
-
   declare -A workers
   for worker in "${worker_ips[@]}"; do
     workers[$worker]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key ${worker} hostname)
@@ -102,7 +103,6 @@ read_from_hostgroups() {
   IFS=',' read -r -a cluster_ips <<< $(cat /tmp/cluster-ips.txt)
 
   # Generate the hostname/ip combination
-  declare -A cluster
   for node in "${cluster_ips[@]}"; do
     cluster[$node]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key ${node} hostname)
     printf "%s     %s\n" "$node" "${cluster[$node]}" >> /tmp/hosts
@@ -112,6 +112,7 @@ read_from_hostgroups() {
 }
 
 #TODO: Figure out the situation when using separate boot node
+#TODO: Make sure /tmp/hosts is empty, so we don't double up all the time
 update_etchosts() {
   ## Update all hostfiles in all nodes in the cluster
   for node in "${!cluster[@]}"; do

@@ -126,7 +126,7 @@ update_etchosts() {
 }
 
 
-if [[ -s /tmp/cluster-ips.txt ]]; then
+if [[ -s /tmp/icp-host-groups.json ]]; then
   read_from_hostgroups
 elif [[ -s ${WORKDIR}/masterlist.txt ]]; then
   read_from_groupfiles

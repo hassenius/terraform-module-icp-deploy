@@ -10,6 +10,9 @@ chmod 600 ${WORKDIR}/ssh_key
 # Global array variable for holding all cluster ip/hostnames
 declare -A cluster
 
+# Make sure /tmp/hosts is empty, in case we running this a second time
+[[ -e /tmp/hosts ]] && rm /tmp/hosts
+
 # Functions for "traditional" groups (master, proxy, worker, management)
 read_from_groupfiles() {
   ## First compile a list of all nodes in the cluster with ip addresses and associated hostnames

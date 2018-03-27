@@ -59,7 +59,8 @@ So for exmaple
 It is possible to execute arbritrary commands between various phases of the cluster setup and installation process.
 Currently, the following hooks are defined
 
-| Hook name                 | Where executed | When executed |
+| Hook name                 | Where executed | When executed                                              |
+|---------------------------|----------------|------------------------------------------------------------|
 | icp-cluster-preconfig-hook| all nodes      | Before any of the module scripts |
 | icp-cluster-postconfig-hook | all nodes    | After preprequisites are installed |
 | icp-boot-preconfig        | boot master    | Before any module scripts on boot master |

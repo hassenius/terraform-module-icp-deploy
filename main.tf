@@ -368,11 +368,22 @@ resource "null_resource" "icp-worker-scaler" {
     agent = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
   }
-
-  provisioner "file" {
-    content = "${join(",", var.icp-worker)}"
-    destination = "/tmp/workerlist.txt"
+  
+  provisioner "remote-exec" {
+    inline = [
+      "echo -n ${join(",", var.icp-master)} > /tmp/masterlist.txt",
+      "echo -n ${join(",", var.icp-proxy)} > /tmp/proxylist.txt",
+      "echo -n ${join(",", var.icp-worker)} > /tmp/workerlist.txt",
+      "echo -n ${join(",", var.icp-management)} > /tmp/managementlist.txt"
+    ]
   }
+
+  # JSON dump the contents of icp-host-groups items
+  provisioner "file" {
+    content     = "${jsonencode(var.icp-host-groups)}"
+    destination = "/tmp/scaled-host-groups.json"
+  }
+
 
   provisioner "file" {
     source      = "${path.module}/scripts/boot-master/scaleworkers.sh"

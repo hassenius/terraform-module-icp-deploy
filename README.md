@@ -59,12 +59,13 @@ So for exmaple
 It is possible to execute arbritrary commands between various phases of the cluster setup and installation process.
 Currently, the following hooks are defined
 
-| Hook name                 | Where executed | When executed |
-| icp-cluster-preconfig-hook| all nodes      | Before any of the module scripts |
-| icp-cluster-postconfig-hook | all nodes    | After preprequisites are installed |
-| icp-boot-preconfig        | boot master    | Before any module scripts on boot master |
-| icp-preinstall-hook       | boot master    | After configuration image load and configuration generation|
-| icp-postinstall-hook      | boot master    | After successful ICP installation                          |
+| Hook name                 | Where executed | When executed                                              |
+|--------------------|----------------|------------------------------------------------------------|
+| cluster-preconfig  | all nodes      | Before any of the module scripts |
+| cluster-postconfig | all nodes      | After preprequisites are installed |
+| boot-preconfig     | boot master    | Before any module scripts on boot master |
+| preinstall         | boot master    | After configuration image load and configuration generation|
+| postinstall        | boot master    | After successful ICP installation                          |
 
 
 

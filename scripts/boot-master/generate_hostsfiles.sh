@@ -1,5 +1,5 @@
 #!/bin/bash
-WORKDIR=/opt/ibm/cluster 
+WORKDIR=/opt/ibm/cluster
 ICPDIR=$WORKDIR
 
 # Make sure ssh key has correct permissions set before using
@@ -50,7 +50,7 @@ if [[ -s ${WORKDIR}/managementlist.txt ]]
 then
   declare -a management_ips
   IFS=', ' read -r -a management_ips <<< $(cat ${WORKDIR}/managementlist.txt)
-  
+
   declare -A mngrs
   for m in "${management_ips[@]}"; do
     mngrs[$m]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key ${m} hostname)
@@ -64,9 +64,9 @@ for node in "${!cluster[@]}"; do
   # No need to ssh to self
   if [[ "$node" == "${master_ips[0]}" ]]
   then
-    cat /tmp/hosts | cat - /etc/hosts | sudo sponge /etc/hosts
+    cat /tmp/hosts | cat - /etc/hosts | sudo tee /etc/hosts
   else
-    cat /tmp/hosts | ssh -i ${WORKDIR}/ssh_key ${node} 'cat - /etc/hosts | sudo sponge /etc/hosts'
+    cat /tmp/hosts | ssh -i ${WORKDIR}/ssh_key ${node} 'cat - /etc/hosts | sudo tee /etc/hosts'
   fi
 done
 

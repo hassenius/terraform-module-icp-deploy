@@ -122,9 +122,9 @@ update_etchosts() {
     # No need to ssh to self
     if [[ "$node" == "${master_ips[0]}" ]]
     then
-      cat /tmp/hosts | cat - /etc/hosts | sudo sponge /etc/hosts
+      cat /tmp/hosts | cat - /etc/hosts | sudo tee /etc/hosts
     else
-      cat /tmp/hosts | ssh -i ${WORKDIR}/ssh_key ${node} 'cat - /etc/hosts | sudo sponge /etc/hosts'
+      cat /tmp/hosts | ssh -i ${WORKDIR}/ssh_key ${node} 'cat - /etc/hosts | sudo tee /etc/hosts'
     fi
   done
 }

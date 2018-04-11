@@ -1,9 +1,6 @@
 #!/bin/bash
-<<<<<<< HEAD
-=======
 LOGFILE=/tmp/generate_hostsfiles.log
 exec  > $LOGFILE 2>&1
->>>>>>> 6c294928f8a6846915bdc90fcf36395b6ccac697
 WORKDIR=/opt/ibm/cluster
 ICPDIR=$WORKDIR
 
@@ -25,45 +22,6 @@ read_from_groupfiles() {
   declare -a worker_ips
   IFS=', ' read -r -a worker_ips <<< $(cat ${WORKDIR}/workerlist.txt)
 
-<<<<<<< HEAD
-declare -A workers
-for worker in "${worker_ips[@]}"; do
-  workers[$worker]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key ${worker} hostname)
-  cluster[$worker]=${workers[$worker]}
-  printf "%s     %s\n" "$worker" "${cluster[$worker]}" >> /tmp/hosts
-done
-
-declare -A proxies
-for proxy in "${proxy_ips[@]}"; do
-  proxies[$proxy]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key ${proxy} hostname)
-  cluster[$proxy]=${proxies[$proxy]}
-  printf "%s     %s\n" "$proxy" "${cluster[$proxy]}" >> /tmp/hosts
-done
-
-declare -A masters
-for m in "${master_ips[@]}"; do
-  # No need to ssh to self
-  if [[ "$m" == "${master_ips[0]}" ]]
-  then
-    masters[$m]=$(hostname)
-  else
-    masters[$m]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key ${m} hostname)
-  fi
-  cluster[$m]=${masters[$m]}
-  printf "%s     %s\n" "$m" "${cluster[$m]}" >> /tmp/hosts
-done
-
-# Add management nodes if separate from master nodes
-if [[ -s ${WORKDIR}/managementlist.txt ]]
-then
-  declare -a management_ips
-  IFS=', ' read -r -a management_ips <<< $(cat ${WORKDIR}/managementlist.txt)
-
-  declare -A mngrs
-  for m in "${management_ips[@]}"; do
-    mngrs[$m]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key ${m} hostname)
-    cluster[$m]=${mngrs[$m]}
-=======
   declare -a proxy_ips
   IFS=', ' read -r -a proxy_ips <<< $(cat ${WORKDIR}/proxylist.txt)
 
@@ -92,18 +50,12 @@ then
       masters[$m]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key ${m} hostname)
     fi
     cluster[$m]=${masters[$m]}
->>>>>>> 6c294928f8a6846915bdc90fcf36395b6ccac697
     printf "%s     %s\n" "$m" "${cluster[$m]}" >> /tmp/hosts
   done
 
   # Add management nodes if separate from master nodes
   if [[ -s ${WORKDIR}/managementlist.txt ]]
   then
-<<<<<<< HEAD
-    cat /tmp/hosts | cat - /etc/hosts | sudo tee /etc/hosts
-  else
-    cat /tmp/hosts | ssh -i ${WORKDIR}/ssh_key ${node} 'cat - /etc/hosts | sudo tee /etc/hosts'
-=======
     declare -a management_ips
     IFS=', ' read -r -a management_ips <<< $(cat ${WORKDIR}/managementlist.txt)
 
@@ -113,7 +65,6 @@ then
       cluster[$m]=${mngrs[$m]}
       printf "%s     %s\n" "$m" "${cluster[$m]}" >> /tmp/hosts
     done
->>>>>>> 6c294928f8a6846915bdc90fcf36395b6ccac697
   fi
 
   ## Generate the hosts file for the ICP installation

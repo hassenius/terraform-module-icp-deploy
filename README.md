@@ -12,7 +12,7 @@ If the default SSH user is not the root user, the default user must have passwor
 | Variable           | Default       |Required| Description                            |
 |--------------------|---------------|--------|----------------------------------------|
 | **Cluster settings** |
-|icp-version         |2.1.0          |No      |Version of ICP to provision. For example 1.2.0, 1.2.0-ee, 2.1.0-beta1|
+|icp-version         |2.1.0          |No      |Version of ICP to provision. See below for details on using private registry|
 |icp-master          |               |Yes     |IP address of ICP Masters. First master will also be boot master. CE edition only supports single master |
 |icp-worker          |               |Yes     |IP addresses of ICP Worker nodes.       |
 |icp-proxy           |               |Yes     |IP addresses of ICP Proxy nodes.        |
@@ -26,6 +26,8 @@ If the default SSH user is not the root user, the default user must have passwor
 |generate_key        |True           |No      |Whether to generate a new ssh key for use by ICP Boot Master to communicate with other nodes|
 |icp_pub_key         |               |No      |Public ssh key for ICP Boot master to connect to ICP Cluster. Only use when generate_key = false|
 |icp_priv_key        |               |No      |Private ssh key for ICP Boot master to connect to ICP Cluster. Only use when generate_key = false|
+| **Terraform installation process** |
+|hooks               | |No      |Hooks into different stages in the cluster setup process. See below for details|
 | **Terraform to cluster ssh configuration**|
 |ssh_user            |root           |No      |Username for Terraform to ssh into the ICP cluster. This is typically the default user with for the relevant cloud vendor|
 |ssh_key_base64      |               |No      |base64 encoded content of private ssh key|
@@ -41,21 +43,45 @@ If the default SSH user is not the root user, the default user must have passwor
 |parallell-image-pull|False          |No      |Download and pull docker images on all nodes in parallell before starting ICP installation. Can speed up installation time|
 
 
+### ICP Version specifications
+The `icp-version` field supports the format `org`/`repo`:`version`. `ibmcom` is the default organisation and `icp-inception` is the default repo, so if you're installing for example version `2.1.0.2` from Docker Hub it's sufficient to specify `2.1.0.2` as the version number.
+
+It is also supported to install from private docker registries.
+In this case the format is:
+`username`:`password`@`private_registry_server`/`org`/`repo`:`version`.
+
+So for exmaple
+
+`myuser:SomeLongPassword@myprivateregistry.local/ibmcom/icp-inception:2.1.0.2`
+
+
+### Hooks
+It is possible to execute arbritrary commands between various phases of the cluster setup and installation process.
+Currently, the following hooks are defined
+
+| Hook name                 | Where executed | When executed                                              |
+|--------------------|----------------|------------------------------------------------------------|
+| cluster-preconfig  | all nodes      | Before any of the module scripts |
+| cluster-postconfig | all nodes      | After preprequisites are installed |
+| boot-preconfig     | boot master    | Before any module scripts on boot master |
+| preinstall         | boot master    | After configuration image load and configuration generation|
+| postinstall        | boot master    | After successful ICP installation                          |
 
 
 
 
 ## Usage example
 
-### Community Edition
+### Using hooks
+
 ```hcl
 module "icpprovision" {
     source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.0.0"
-    
+
     icp-master  = ["${softlayer_virtual_guest.icpmaster.ipv4_address}"]
     icp-worker  = ["${softlayer_virtual_guest.icpworker.*.ipv4_address}"]
     icp-proxy   = ["${softlayer_virtual_guest.icpproxy.*.ipv4_address}"]
-    
+
     icp-version = "2.1.0.1"
 
     cluster_size  = "${var.master["nodes"] + var.worker["nodes"] + var.proxy["nodes"]}"
@@ -67,21 +93,63 @@ module "icpprovision" {
     }
 
     generate_key = true
-    
+
     ssh_user     = "ubuntu"
     ssh_key_file = "~/.ssh/id_rsa"
-    
-} 
+    hooks = {
+      "cluster-preconfig" = [
+        "echo This will run on all nodes",
+        "echo And I can run as many commands",
+        "echo as I want",
+        "echo ....they will run in order"
+      ]
+      "postinstall" = [
+        "echo Performing some post install backup",
+        "${ var.postinstallbackup != "true" ? "" : "sudo chmod a+x /tmp/icp_backup.sh ; sudo /tmp/icp_backup.sh" }"
+      ]
+    }
+}
 ```
 
-### Enterprise Edition
+
+#### Community Edition
+
+```hcl
 module "icpprovision" {
     source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.0.0"
-    
+
+    icp-master  = ["${softlayer_virtual_guest.icpmaster.ipv4_address}"]
+    icp-worker  = ["${softlayer_virtual_guest.icpworker.*.ipv4_address}"]
+    icp-proxy   = ["${softlayer_virtual_guest.icpproxy.*.ipv4_address}"]
+
+    icp-version = "2.1.0.1"
+
+    cluster_size  = "${var.master["nodes"] + var.worker["nodes"] + var.proxy["nodes"]}"
+
+    icp_configuration = {
+      "network_cidr"              = "192.168.0.0/16"
+      "service_cluster_ip_range"  = "172.16.0.1/24"
+      "default_admin_password"    = "My0wnPassw0rd"
+    }
+
+    generate_key = true
+
+    ssh_user     = "ubuntu"
+    ssh_key_file = "~/.ssh/id_rsa"
+
+}
+```
+
+#### Enterprise Edition
+
+```hcl
+module "icpprovision" {
+    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.0.0"
+
     icp-master = ["${softlayer_virtual_guest.icpmaster.ipv4_address}"]
     icp-worker = ["${softlayer_virtual_guest.icpworker.*.ipv4_address}"]
     icp-proxy  = ["${softlayer_virtual_guest.icpproxy.*.ipv4_address}"]
-    
+
     icp-version    = "2.1.0.1-ee"
     image_location = "nfs:fsf-lon0601b-fz.adn.networklayer.com:/IBM02S6275/data01/ibm-cloud-private-x86_64-2.1.0.1.tar.gz"
     parallell-pull = True
@@ -95,11 +163,11 @@ module "icpprovision" {
     }
 
     generate_key = true
-    
+
     ssh_user     = "ubuntu"
     ssh_key_file = "~/.ssh/id_rsa"
-    
-} 
+
+}
 ```
 
 There are several examples for different providers available from [IBM Cloud Architecture Solutions Group github page](https://github.com/ibm-cloud-architecture)
@@ -107,7 +175,7 @@ There are several examples for different providers available from [IBM Cloud Arc
 - [ICP on VMware](https://github.com/ibm-cloud-architecture/terraform-icp-vmware)
 
 
-### ICP Configuration 
+### ICP Configuration
 Configuration file is generated from items in the following order
 
 1. config.yaml shipped with ICP (if config_strategy = merge, else blank)
@@ -130,6 +198,3 @@ To manually trigger the removal of deleted node, run these commands:
 
 1. `terraform taint --module icpprovision null_resource.icp-worker-scaler`
 2. `terraform apply`
-
-
-

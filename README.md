@@ -12,13 +12,15 @@ If the default SSH user is not the root user, the default user must have passwor
 | Variable           | Default       |Required| Description                            |
 |--------------------|---------------|--------|----------------------------------------|
 | **Cluster settings** |
-|icp-version         |2.1.0          |No      |Version of ICP to provision. See below for details on using private registry|
-|icp-master          |               |Yes     |IP address of ICP Masters. First master will also be boot master. CE edition only supports single master |
-|icp-worker          |               |Yes     |IP addresses of ICP Worker nodes.       |
-|icp-proxy           |               |Yes     |IP addresses of ICP Proxy nodes.        |
+|icp-version         |2.1.0.2        |No      |Version of ICP to provision. See below for details on using private registry|
+|icp-master          |               |No*     |IP address of ICP Masters. Required if you don't use icp-host-groups |
+|icp-worker          |               |No*     |IP addresses of ICP Worker nodes. Required if you don't use icp-host-groups       |
+|icp-proxy           |               |No*     |IP addresses of ICP Proxy nodes. Required if you don't use icp-host-groups        |
 |icp-management      |               |No      |IP addresses of ICP Management Nodes, if management is to be separated from master nodes. Optional|
+| icp-host-groups   |                 |No*     | Map of host types and IPs. See below for details. |
+| boot-node          |               |No*     | IP Address of boot node. Needed when using icp-host-groups or when using a boot node separate from first master node |
 |cluster_size        |               |Yes     |Define total clustersize. Workaround for terraform issue #10857. Normally computed|
-| **ICP Configuration ** |
+| **ICP Configuration** |
 |icp_config_file     |               |No      |Yaml configuration file for ICP installation|
 |icp_configuration   |               |No      |Configuration items for ICP installation. See [KnowledgeCenter](https://www.ibm.com/support/knowledgecenter/SSBS6K_2.1.0/installing/config_yaml.html) for reference|
 |config_strategy     |merge          |No      |Strategy for original config.yaml shipped with ICP. Default is merge, everything else means override. |
@@ -42,6 +44,18 @@ If the default SSH user is not the root user, the default user must have passwor
 |enterprise-edition  |False          |No      |Whether to provision enterprise edition (EE) or community edition (CE). EE requires image files to be provided|
 |parallell-image-pull|False          |No      |Download and pull docker images on all nodes in parallell before starting ICP installation. Can speed up installation time|
 
+## Outputs
+
+- icp_public_key
+    * The public key used for boot master to connect via ssh for cluster setup
+- icp_private_key
+    * The public key used for boot master to connect via ssh for cluster setup
+- install_complete
+    * Boolean value that is set to true when ICP installation process is completed
+- icp_version
+    * The ICP version that has been installed
+- cluster_ips
+    * List of IPs of the cluster
 
 ### ICP Version specifications
 The `icp-version` field supports the format `org`/`repo`:`version`. `ibmcom` is the default organisation and `icp-inception` is the default repo, so if you're installing for example version `2.1.0.2` from Docker Hub it's sufficient to specify `2.1.0.2` as the version number.
@@ -68,7 +82,10 @@ Currently, the following hooks are defined
 | postinstall        | boot master    | After successful ICP installation                          |
 
 
+### Host groups
+In ICP version 2.1.0.2 the concept of host groups were introduced. This allows users to define groups of hosts by an arbritrary name that will be labelled such that they can be dedicated to particular workloads. You can read more about host groups on the [KnowledgeCenter](https://www.ibm.com/support/knowledgecenter/en/SSBS6K_2.1.0.2/installing/hosts.html)
 
+To support this an input map called `icp-host-groups` were introduced, and this can be used to generate the relevant hosts file for the ICP installer. When using this field it should be used **instead of** the `icp-master`, `icp-worker`, etc fields.
 
 ## Usage example
 
@@ -111,6 +128,39 @@ module "icpprovision" {
 }
 ```
 
+
+#### Using HostGroups
+
+```hcl
+module "icpprovision" {
+    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.2.0"
+
+    # We will define master, management, worker, proxy and va (Vulnerability Assistant) as well as a custom db2 group
+    icp-host-groups = {
+      master     = "${openstack_compute_instance_v2.icpmaster.*.access_ip_v4}"
+      management = "${openstack_compute_instance_v2.icpmanagement.*.access_ip_v4}"
+      worker     = "${openstack_compute_instance_v2.icpworker.*.access_ip_v4}"
+      proxy      = "${openstack_compute_instance_v2.icpproxy.*.access_ip_v4}"
+      va         = "${openstack_compute_instance_v2.icpva.*.access_ip_v4}"
+
+      hostgroup-db2        = "${openstack_compute_instance_v2.icpdb2.*.access_ip_v4}"
+    }
+
+    # We always have to specify a node to bootstrap the cluster. It can be any of the cluster nodes, or a separate node that has network access to the cluster.
+    # We will use the first master node as boot node to run the ansible installer from
+    boot-node   = "${openstack_compute_instance_v2.icpmaster.0.access_ip_v4}"
+
+    icp-version = "2.1.0.2"
+
+    cluster_size  = "${var.master["nodes"] + var.worker["nodes"] + var.proxy["nodes"]}"
+
+    icp_configuration = {
+      "network_cidr"              = "192.168.0.0/16"
+      "service_cluster_ip_range"  = "172.16.0.1/24"
+      "default_admin_password"    = "My0wnPassw0rd"
+    }
+}
+```
 
 #### Community Edition
 
@@ -198,3 +248,37 @@ To manually trigger the removal of deleted node, run these commands:
 
 1. `terraform taint --module icpprovision null_resource.icp-worker-scaler`
 2. `terraform apply`
+
+
+## Module Versions
+
+As new use cases and best practices emerge code will be added to and changed the in module. Any changes in the code leads to a new release version. The module versions follow a [semantic versioning](https://semver.org/) scheme.
+
+To avoid breaking existing templates which depends on the module it is recommended to add a version tag to the module source when pulling directly from git.
+
+
+### Versions and changes
+
+#### 2.2.0
+- Added support for hostgroups
+- Updated preprequisites scripts to avoid emediate failure in airgapped installations
+- Include module outputs
+
+
+#### 2.1.0
+- Added support for install hooks
+- Added support for converged proxy nodes (combined master/proxy)
+- Added support for private docker registry
+
+#### 2.0.1
+- Fixed problem with worker scaler
+
+#### 2.0.0
+- Added support for ssh bastion host
+- Added support for dedicated management hosts
+- Split up null_resource provisioners to increase granularity
+- Added support for parallell load of EE images
+- Various fixes
+
+#### 1.0.0
+- Initial release

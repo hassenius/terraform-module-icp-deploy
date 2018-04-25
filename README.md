@@ -259,6 +259,9 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 ### Versions and changes
 
+#### 2.2.1
+- Fix scaler error when using hostgroups
+
 #### 2.2.0
 - Added support for hostgroups
 - Updated preprequisites scripts to avoid emediate failure in airgapped installations

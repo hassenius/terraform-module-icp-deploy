@@ -21,13 +21,14 @@ declare -a added
 declare -a removed
 
 # As a precausion, if either list is empty, something might have gone wrong and we should exit in case we delete all nodes in error
+# When using hostgroups this is expected behaviour, so need to exit 0 rather than cause error.
 if [ ${#newlist[@]} -eq 0 ]; then
   echo "Couldn't find any entries in new list of workers. Exiting'"
-  exit 1
+  exit 0
 fi
 if [ ${#oldlist[@]} -eq 0 ]; then
   echo "Couldn't find any entries in old list of workers. Exiting'"
-  exit 1
+  exit 0
 fi
 
 
@@ -96,7 +97,7 @@ then
 
   list=$(IFS=, ; echo "${added[*]}")
   docker run -e LICENSE=accept --net=host -v "/opt/ibm/cluster":/installer/cluster \
-  ${registry}${registry:+/}${org}/${repo}:${tag} install -l ${list}  
+  ${registry}${registry:+/}${org}/${repo}:${tag} install -l ${list}
 fi
 
 

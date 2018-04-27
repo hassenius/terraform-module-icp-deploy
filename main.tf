@@ -71,7 +71,32 @@ resource "null_resource" "icp-cluster" {
       "cat /tmp/icpkey >> ~/.ssh/authorized_keys",
       "chmod a+x /tmp/icp-common-scripts/*",
       "/tmp/icp-common-scripts/prereqs.sh",
-      "/tmp/icp-common-scripts/version-specific.sh ${var.icp-version}",
+      "/tmp/icp-common-scripts/version-specific.sh ${var.icp-version}"
+    ]
+  }
+}
+
+# Place all logic relating to installation of docker here.
+resource "null_resource" "icp-docker" {
+  depends_on = [, "null_resource.icp-cluster"]
+
+  count = "${var.cluster_size}"
+
+  # TODO: We'll need to redo this logic to support standalone boot nodes.
+  # We may want to support a scenario where only the boot node uses default docker, and rest uses provided docker binary
+  connection {
+    host          = "${element(local.icp-ips, count.index)}"
+    user          = "${var.ssh_user}"
+    private_key   = "${local.ssh_key}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
+  }
+
+
+  # Make sure scripts are executable and docker installed
+  provisioner "remote-exec" {
+    inline = [
+      "/tmp/icp-common-scripts/install-docker.sh \"${var.docker_package_location}\" ",
       "/tmp/icp-common-scripts/docker-user.sh"
     ]
   }
@@ -79,7 +104,7 @@ resource "null_resource" "icp-cluster" {
 
 ## Cluster postconfig hook
 resource "null_resource" "icp-cluster-postconfig-hook" {
-  depends_on = ["null_resource.icp-cluster"]
+  depends_on = ["null_resource.icp-docker"]
   count = "${contains(keys(var.hooks), "cluster-postconfig") ? var.cluster_size : 0}"
 
   connection {
@@ -101,7 +126,7 @@ resource "null_resource" "icp-cluster-postconfig-hook" {
 
 # First hook for Boot node
 resource "null_resource" "icp-boot-preconfig" {
-  depends_on = ["null_resource.icp-cluster-postconfig-hook", "null_resource.icp-cluster"]
+  depends_on = ["null_resource.icp-cluster-postconfig-hook", "null_resource.icp-docker"]
   count = "${contains(keys(var.hooks), "boot-preconfig") ? 1 : 0}"
 
   # The first master is always the boot master where we run provisioning jobs from
@@ -121,8 +146,8 @@ resource "null_resource" "icp-boot-preconfig" {
   }
 }
 
-resource "null_resource" "icp-docker" {
-  depends_on = ["null_resource.icp-boot-preconfig", "null_resource.icp-cluster"]
+resource "null_resource" "icp-image" {
+  depends_on = ["null_resource.icp-boot-preconfig", "null_resource.icp-docker"]
 
   count = "${var.parallell-image-pull ? var.cluster_size : "1"}"
 
@@ -135,12 +160,9 @@ resource "null_resource" "icp-docker" {
     bastion_host  = "${var.bastion_host}"
   }
 
-
   provisioner "remote-exec" {
     inline = [
       "mkdir -p /tmp/icp-bootmaster-scripts",
-      "sudo mkdir -p /opt/ibm/cluster",
-      "sudo chown ${var.ssh_user} /opt/ibm/cluster"
     ]
   }
 
@@ -148,32 +170,7 @@ resource "null_resource" "icp-docker" {
     source      = "${path.module}/scripts/boot-master/"
     destination = "/tmp/icp-bootmaster-scripts"
   }
-
-  # Make sure scripts are executable and docker installed
-  provisioner "remote-exec" {
-    inline = [
-      "chmod a+x /tmp/icp-bootmaster-scripts/*.sh",
-      "/tmp/icp-bootmaster-scripts/install-docker.sh \"${var.docker_package_location}\" "
-    ]
-  }
-}
-
-resource "null_resource" "icp-image" {
-  depends_on = ["null_resource.icp-docker"]
-
-  count = "${var.parallell-image-pull ? var.cluster_size : "1"}"
-
-  # Boot node is always the first entry in the IP list, so if we're not pulling in parallell this will only happen on boot node
-  connection {
-    host          = "${element(local.icp-ips, count.index)}"
-    user          = "${var.ssh_user}"
-    private_key   = "${local.ssh_key}"
-    agent         = "${var.ssh_agent}"
-    bastion_host  = "${var.bastion_host}"
-  }
-
   # If this is enterprise edition we'll need to copy the image file over and load it in local repository
-  // We'll need to find another workaround while tf does not support count for this
   provisioner "file" {
       # count = "${var.enterprise-edition ? 1 : 0}"
       source = "${var.enterprise-edition ? var.image_file : "/dev/null" }"
@@ -183,6 +180,7 @@ resource "null_resource" "icp-image" {
   provisioner "remote-exec" {
     inline = [
       "echo \"Loading image ${var.icp-version}\"",
+      "chmod a+x /tmp/icp-bootmaster-scripts/*.sh",
       "/tmp/icp-bootmaster-scripts/load-image.sh ${var.icp-version} /tmp/${basename(var.image_file)} \"${var.image_location}\" "
     ]
   }
@@ -203,6 +201,13 @@ resource "null_resource" "icp-boot" {
     bastion_host  = "${var.bastion_host}"
   }
 
+  # Make sure the cluster dir exists
+  provisioner "remote-exec" {
+    inline = [
+      "sudo mkdir -p /opt/ibm/cluster",
+      "sudo chown ${var.ssh_user} /opt/ibm/cluster"
+    ]
+  }
 
   # store config yaml if it was specified
   provisioner "file" {
@@ -357,7 +362,12 @@ resource "null_resource" "icp-worker-scaler" {
   depends_on = ["null_resource.icp-cluster", "null_resource.icp-install"]
 
   triggers {
+    nodes = "${join(",", local.icp-ips)}"
     workers = "${join(",", var.icp-worker)}"
+    masters = "${join(",", var.icp-master)}"
+    proxy   = "${join(",", var.icp-proxy)}"
+    management = "${join(",", var.icp-management)}"
+    hostgroups = "${join(",", local.host-group-ips)}"
   }
 
   connection {
@@ -367,7 +377,7 @@ resource "null_resource" "icp-worker-scaler" {
     agent = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
   }
-  
+
   provisioner "remote-exec" {
     inline = [
       "echo -n ${join(",", var.icp-master)} > /tmp/masterlist.txt",

@@ -124,16 +124,17 @@ update_etchosts() {
     then
       cat /tmp/hosts | cat - /etc/hosts | sudo tee /etc/hosts
     else
-      cat /tmp/hosts | ssh -i ${WORKDIR}/ssh_key ${node} 'cat - /etc/hosts | sudo tee /etc/hosts'
+      cat /tmp/hosts | ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key ${node} 'cat - /etc/hosts | sudo tee /etc/hosts'
     fi
   done
 }
 
-
-if [[ -s /tmp/icp-host-groups.json ]]; then
-  read_from_hostgroups
-elif [[ -s ${WORKDIR}/masterlist.txt ]]; then
+# if icp-hosts-groups.json is there it will be populated by '{}' if not using hostgroups
+# Let group files take preference
+if [[ -s ${WORKDIR}/masterlist.txt ]]; then
   read_from_groupfiles
+elif [[ -s /tmp/icp-host-groups.json ]]; then
+  read_from_hostgroups
 else
   echo "Couldn't find any hosts"
   exit 1

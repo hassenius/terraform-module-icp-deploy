@@ -128,8 +128,8 @@ update_etchosts() {
   done
 
   ## remove the case where the hostname resolves to 127.0.0.1 or 127.0.1.1
-  cat /tmp/hosts.out | sed -e "s/127.0.0.1.*$(hostname)/d" > /tmp/hosts.out
-  cat /tmp/hosts.out | sed -e "s/127.0.1.1.*$(hostname)/d" > /tmp/hosts.out
+  cat /tmp/hosts.out | sed -e "/127.0.0.1.*$(hostname)/d" > /tmp/hosts.out
+  cat /tmp/hosts.out | sed -e "/127.0.1.1.*$(hostname)/d" > /tmp/hosts.out
 
   sudo mv /tmp/hosts.out /etc/hosts
 

@@ -2,16 +2,19 @@
 variable "icp-master" {
   type        = "list"
   description =  "IP address of ICP Masters. First master will also be boot master. CE edition only supports single master "
+  default     = []
 }
 
 variable "icp-worker" {
   type        = "list"
   description =  "IP addresses of ICP Worker nodes."
+  default     = []
 }
 
 variable "icp-proxy" {
   type        = "list"
   description =  "IP addresses of ICP Proxy nodes."
+  default     = []
 }
 
 variable "icp-management" {
@@ -48,7 +51,7 @@ variable "docker_package_location" {
 
 variable  "icp-version" {
   description = "Version of ICP to provision. For example 1.2.0, 1.2.0-ee, 2.1.0-beta1"
-  default = "2.1.0"
+  default = "2.1.0.2"
 }
 
 variable "ssh_user" {
@@ -133,9 +136,20 @@ variable "hooks" {
   default     = {}
 }
 
+variable "icp-host-groups" {
+  description = "Map of host groups and IPs in the cluster. Needs at least master, proxy and worker"
+  type        = "map"
+  default     = {}
+}
+
+variable "boot-node" {
+  description = "Node where ICP installer will be run from. Often first master node, but can be different"
+}
+
 locals {
-  icp-ips       = "${distinct(concat(var.icp-master, var.icp-proxy, var.icp-management, var.icp-worker))}"
+  spec-icp-ips  = "${distinct(concat(var.icp-master, var.icp-proxy, var.icp-management, var.icp-worker))}"
+  host-group-ips = "${keys(transpose(var.icp-host-groups))}"
+  icp-ips       = "${coalescelist(local.spec-icp-ips, local.host-group-ips)}"
   cluster_size  = "${length(concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management))}"
   ssh_key       = "${var.ssh_key_base64 == "" ? file(coalesce(var.ssh_key_file, "/dev/null")) : base64decode(var.ssh_key_base64)}"
-
 }

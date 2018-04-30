@@ -23,28 +23,23 @@ ubuntu_install(){
   packages_to_check="\
 python-yaml \
 thin-provisioning-tools \
-lvm2 \
-libltdl7"
-
+lvm2"
   sudo sysctl -w vm.max_map_count=262144
-  sudo apt-get -y update
-  sudo apt-get install -y apt-transport-https nfs-common ca-certificates curl software-properties-common
-  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-  sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+  packages_to_install=""
 
-  ## Attempt to avoid probelems when dpkg requires configuration
-  export DEBIAN_FRONTEND=noninteractive
-  export DEBIAN_PRIORITY=critical
-  sudo -E apt-get -y update
-  sudo -E apt-get -y -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" upgrade
+  for package in ${packages_to_check}; do
+    if ! dpkg -l ${package} &> /dev/null; then
+      packages_to_install="${packages_to_install} ${package}"
+    fi
+  done
 
-  sudo apt-get install -y python unzip moreutils python-pip
-  sudo service iptables stop
-  sudo ufw disable
-  sudo apt-get install -y docker-ce
-  sudo service docker start
-  echo y | pip uninstall docker-py
+  if [ ! -z "${packages_to_install}" ]; then
+    # attempt to install, probably won't work airgapped but we'll get an error immediately
+    echo "Attempting to install: ${packages_to_install} ..."
+    sudo apt-get install -y ${packages_to_install}
+  fi
 }
+
 crlinux_install(){
   packages_to_check="\
 PyYAML \
@@ -62,6 +57,11 @@ lvm2"
     fi
   done
 
+  if [ ! -z "${packages_to_install}" ]; then
+    # attempt to install, probably won't work airgapped but we'll get an error immediately
+    echo "Attempting to install: ${packages_to_install} ..."
+    sudo yum install -y ${packages_to_install}
+  fi
 }
 
 if [ "$OSLEVEL" == "ubuntu" ]; then

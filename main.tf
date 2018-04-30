@@ -1,7 +1,7 @@
 
 # Generate a new key if this is required
 resource "tls_private_key" "icpkey" {
-  count       = "${var.generate_key ? 1 : 0}"
+  # count       = "${var.generate_key ? 1 : 0}" # Generate the key anyways, since the output logic needs it for interpolation
   algorithm   = "RSA"
 
   provisioner "local-exec" {
@@ -106,7 +106,7 @@ resource "null_resource" "icp-boot-preconfig" {
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
-    host          = "${element(var.icp-master, 0)}"
+    host          = "${var.boot-node}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
@@ -196,7 +196,7 @@ resource "null_resource" "icp-boot" {
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
-    host          = "${element(var.icp-master, 0)}"
+    host          = "${var.boot-node}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
@@ -225,7 +225,7 @@ resource "null_resource" "icp-config" {
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
-    host          = "${element(local.icp-ips, 0)}"
+    host          = "${var.boot-node}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
@@ -237,7 +237,6 @@ resource "null_resource" "icp-config" {
       "/tmp/icp-bootmaster-scripts/copy_cluster_skel.sh ${var.icp-version}",
       "sudo chown ${var.ssh_user} /opt/ibm/cluster/*",
       "chmod 600 /opt/ibm/cluster/ssh_key",
-      "sudo pip install pyyaml",
       "python /tmp/icp-bootmaster-scripts/load-config.py ${var.config_strategy}"
     ]
   }
@@ -248,27 +247,22 @@ resource "null_resource" "icp-config" {
       destination = "/opt/ibm/cluster/ssh_key"
   }
 
-  provisioner "file" {
-    content = "${join(",", var.icp-worker)}"
-    destination = "/opt/ibm/cluster/workerlist.txt"
-  }
-
-  provisioner "file" {
-    content = "${join(",", var.icp-master)}"
-    destination = "/opt/ibm/cluster/masterlist.txt"
-  }
-
-  provisioner "file" {
-    content = "${join(",", var.icp-proxy)}"
-    destination = "/opt/ibm/cluster/proxylist.txt"
-  }
 
   # Since the file provisioner deals badly with empty lists, we'll create the optional management nodes differently
   # Later we may refactor to use this method for all node types for consistency
   provisioner "remote-exec" {
     inline = [
+      "echo -n ${join(",", var.icp-master)} > /opt/ibm/cluster/masterlist.txt",
+      "echo -n ${join(",", var.icp-proxy)} > /opt/ibm/cluster/proxylist.txt",
+      "echo -n ${join(",", var.icp-worker)} > /opt/ibm/cluster/workerlist.txt",
       "echo -n ${join(",", var.icp-management)} > /opt/ibm/cluster/managementlist.txt"
     ]
+  }
+
+  # JSON dump the contents of icp-host-groups items
+  provisioner "file" {
+    content     = "${jsonencode(var.icp-host-groups)}"
+    destination = "/tmp/icp-host-groups.json"
   }
 }
 
@@ -280,7 +274,7 @@ resource "null_resource" "icp-generate-hosts-files" {
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
-    host          = "${element(var.icp-master, 0)}"
+    host          = "${var.boot-node}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
@@ -301,7 +295,7 @@ resource "null_resource" "icp-preinstall-hook" {
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
-    host          = "${element(var.icp-master, 0)}"
+    host          = "${var.boot-node}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
@@ -322,7 +316,7 @@ resource "null_resource" "icp-install" {
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
-    host          = "${element(var.icp-master, 0)}"
+    host          = "${var.boot-node}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
@@ -344,7 +338,7 @@ resource "null_resource" "icp-postinstall-hook" {
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
-    host          = "${element(var.icp-master, 0)}"
+    host          = "${var.boot-node}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
@@ -367,17 +361,28 @@ resource "null_resource" "icp-worker-scaler" {
   }
 
   connection {
-    host = "${element(var.icp-master, 0)}"
+    host          = "${var.boot-node}"
     user = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
   }
-
-  provisioner "file" {
-    content = "${join(",", var.icp-worker)}"
-    destination = "/tmp/workerlist.txt"
+  
+  provisioner "remote-exec" {
+    inline = [
+      "echo -n ${join(",", var.icp-master)} > /tmp/masterlist.txt",
+      "echo -n ${join(",", var.icp-proxy)} > /tmp/proxylist.txt",
+      "echo -n ${join(",", var.icp-worker)} > /tmp/workerlist.txt",
+      "echo -n ${join(",", var.icp-management)} > /tmp/managementlist.txt"
+    ]
   }
+
+  # JSON dump the contents of icp-host-groups items
+  provisioner "file" {
+    content     = "${jsonencode(var.icp-host-groups)}"
+    destination = "/tmp/scaled-host-groups.json"
+  }
+
 
   provisioner "file" {
     source      = "${path.module}/scripts/boot-master/scaleworkers.sh"

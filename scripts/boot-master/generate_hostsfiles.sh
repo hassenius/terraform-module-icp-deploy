@@ -1,5 +1,5 @@
 #!/bin/bash
-WORKDIR=/opt/ibm/cluster 
+WORKDIR=/opt/ibm/cluster
 ICPDIR=$WORKDIR
 
 # Make sure ssh key has correct permissions set before using
@@ -50,7 +50,7 @@ if [[ -s ${WORKDIR}/managementlist.txt ]]
 then
   declare -a management_ips
   IFS=', ' read -r -a management_ips <<< $(cat ${WORKDIR}/managementlist.txt)
-  
+
   declare -A mngrs
   for m in "${management_ips[@]}"; do
     mngrs[$m]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key ${m} hostname)
@@ -68,32 +68,54 @@ for node in "${!cluster[@]}"; do
   else
     cat /tmp/hosts | ssh -i ${WORKDIR}/ssh_key ${node} 'cat - /etc/hosts | sudo sponge /etc/hosts'
   fi
-done
+}
 
-## Generate the hosts file for the ICP installation
-echo '[master]' > ${ICPDIR}/hosts
-for master in "${master_ips[@]}"; do
-  echo $master >> ${ICPDIR}/hosts
-done
 
-echo  >> ${ICPDIR}/hosts
-echo '[worker]' >> ${ICPDIR}/hosts
-for worker in "${worker_ips[@]}"; do
-  echo $worker >> ${ICPDIR}/hosts
-done
+read_from_hostgroups() {
+  # First parse the hostgroup json
+  python /tmp/icp-bootmaster-scripts/parse-hostgroups.py
 
-echo  >> ${ICPDIR}/hosts
-echo '[proxy]' >> ${ICPDIR}/hosts
-for proxy in "${proxy_ips[@]}"; do
-  echo $proxy >> ${ICPDIR}/hosts
-done
+  # Get the cluster ips
+  declare -a cluster_ips
+  IFS=',' read -r -a cluster_ips <<< $(cat /tmp/cluster-ips.txt)
 
-# Add management host entries if separate from master nodes
-if [[ ! -z ${management_ips} ]]
-then
-  echo  >> ${ICPDIR}/hosts
-  echo '[management]' >> ${ICPDIR}/hosts
-  for m in "${management_ips[@]}"; do
-    echo $m >> ${ICPDIR}/hosts
+  # Generate the hostname/ip combination
+  for node in "${cluster_ips[@]}"; do
+    cluster[$node]=$(ssh -o StrictHostKeyChecking=no -i ${WORKDIR}/ssh_key ${node} hostname)
+    printf "%s     %s\n" "$node" "${cluster[$node]}" >> /tmp/hosts
   done
+
+
+}
+
+#TODO: Figure out the situation when using separate boot node
+#TODO: Make sure /tmp/hosts is empty, so we don't double up all the time
+update_etchosts() {
+  ## Update all hostfiles in all nodes in the cluster
+  for node in "${!cluster[@]}"; do
+    # No need to ssh to self
+    if [[ "$node" == "${master_ips[0]}" ]]
+    then
+      cat /tmp/hosts | cat - /etc/hosts | tee /tmp/hosts.out
+    else
+      cat /tmp/hosts | ssh -i ${WORKDIR}/ssh_key ${node} 'cat - /etc/hosts | tee /tmp/hosts.out'
+    fi
+  done
+
+  ## remove the case where the hostname resolves to 127.0.0.1 or 127.0.1.1
+  cat /tmp/hosts.out | sed -e "s/127.0.0.1.*$(hostname)/d" > /tmp/hosts.out
+  cat /tmp/hosts.out | sed -e "s/127.0.1.1.*$(hostname)/d" > /tmp/hosts.out
+
+  sudo mv /tmp/hosts.out /etc/hosts
+
+}
+
+
+if [[ -s /tmp/icp-host-groups.json ]]; then
+  read_from_hostgroups
+elif [[ -s ${WORKDIR}/masterlist.txt ]]; then
+  read_from_groupfiles
+else
+  echo "Couldn't find any hosts"
+  exit 1
 fi

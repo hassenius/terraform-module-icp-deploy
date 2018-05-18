@@ -49,12 +49,6 @@ resource "null_resource" "icp-cluster" {
     ]
   }
 
-  provisioner "file" {
-      content = "${var.generate_key ? tls_private_key.icpkey.public_key_openssh : var.icp_pub_key}"
-      destination = "/tmp/icpkey"
-
-  }
-
   provisioner "remote-exec" {
     inline = [
       "mkdir -p /tmp/icp-common-scripts"
@@ -68,7 +62,7 @@ resource "null_resource" "icp-cluster" {
   provisioner "remote-exec" {
     inline = [
       "mkdir -p ~/.ssh",
-      "cat /tmp/icpkey >> ~/.ssh/authorized_keys",
+      "echo '${var.generate_key ? tls_private_key.icpkey.public_key_openssh : var.icp_pub_key}' | tee -a ~/.ssh/authorized_keys",
       "chmod a+x /tmp/icp-common-scripts/*",
       "/tmp/icp-common-scripts/prereqs.sh",
       "/tmp/icp-common-scripts/version-specific.sh ${var.icp-version}",
@@ -367,7 +361,7 @@ resource "null_resource" "icp-worker-scaler" {
     agent = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
   }
-  
+
   provisioner "remote-exec" {
     inline = [
       "echo -n ${join(",", var.icp-master)} > /tmp/masterlist.txt",

@@ -147,9 +147,9 @@ variable "boot-node" {
 }
 
 locals {
-  spec-icp-ips  = "${distinct(concat(var.icp-master, var.icp-proxy, var.icp-management, var.icp-worker))}"
-  host-group-ips = "${keys(transpose(var.icp-host-groups))}"
-  icp-ips       = "${coalescelist(local.spec-icp-ips, local.host-group-ips)}"
+  spec-icp-ips  = "${distinct(compact(concat(list(var.boot-node), var.icp-master, var.icp-proxy, var.icp-management, var.icp-worker)))}"
+  host-group-ips = "${distinct(compact(concat(list(var.boot-node), keys(transpose(var.icp-host-groups)))))}"
+  icp-ips       = "${distinct(concat(local.spec-icp-ips, local.host-group-ips))}"
   cluster_size  = "${length(concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management))}"
   ssh_key       = "${var.ssh_key_base64 == "" ? file(coalesce(var.ssh_key_file, "/dev/null")) : base64decode(var.ssh_key_base64)}"
 }

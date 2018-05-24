@@ -13,7 +13,7 @@ function parse_icpversion() {
     # Save username password if specified for registry
     if [[ $r =~ .*@.* ]]
     then
-      local up=${r%%@*}
+      local up=${r%@*}
       username=${up%%:*}
       password=${up##*:}
       registry=${r##*@}

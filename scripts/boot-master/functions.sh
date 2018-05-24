@@ -15,7 +15,7 @@ function parse_icpversion() {
     then
       local up=${r%@*}
       username=${up%%:*}
-      password=${up##*:}
+      password=${up#*:}
       registry=${r##*@}
     else
       registry=${r}

@@ -30,6 +30,7 @@ If the default SSH user is not the root user, the default user must have passwor
 |icp_priv_key        |               |No      |Private ssh key for ICP Boot master to connect to ICP Cluster. Only use when generate_key = false|
 | **Terraform installation process** |
 |hooks               | |No      |Hooks into different stages in the cluster setup process. See below for details|
+|install-verbosity   | |No      | Verbosity of the icp ansible installer. -v to -vvvv. See ansible documentation for verbosity information | 
 | **Terraform to cluster ssh configuration**|
 |ssh_user            |root           |No      |Username for Terraform to ssh into the ICP cluster. This is typically the default user with for the relevant cloud vendor|
 |ssh_key_base64      |               |No      |base64 encoded content of private ssh key|
@@ -261,7 +262,7 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 #### 2.3.0
 - Add full support for separate boot node
-- Save icp install log output
+- Save icp install log output to /tmp/icp-install-log.txt
 - Add option for verbosity on icp install log output
 
 #### 2.2.2

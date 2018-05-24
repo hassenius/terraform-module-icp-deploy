@@ -259,6 +259,10 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 ### Versions and changes
 
+#### 2.2.2
+- Fix issues with email usernames when using private registry
+- Fix passwords containing ':' when using private registry
+
 #### 2.2.1
 - Fix scaler error when using hostgroups
 

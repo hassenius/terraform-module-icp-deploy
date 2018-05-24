@@ -259,6 +259,11 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 ### Versions and changes
 
+#### 2.3.0
+- Add full support for separate boot node
+- Save icp install log output
+- Add option for verbosity on icp install log output
+
 #### 2.2.2
 - Fix issues with email usernames when using private registry
 - Fix passwords containing ':' when using private registry

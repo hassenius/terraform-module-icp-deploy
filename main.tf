@@ -320,7 +320,7 @@ resource "null_resource" "icp-install" {
 
   provisioner "remote-exec" {
     inline = [
-      "/tmp/icp-bootmaster-scripts/start_install.sh ${var.icp-version}"
+      "/tmp/icp-bootmaster-scripts/start_install.sh ${var.icp-version} ${var.install-verbosity}"
     ]
   }
 }

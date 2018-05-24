@@ -146,6 +146,11 @@ variable "boot-node" {
   description = "Node where ICP installer will be run from. Often first master node, but can be different"
 }
 
+variable "install-verbosity" {
+  description = "Verbosity of ansible installer output. -v to -vvvv where the maximum level includes connectivity information"
+  default     = ""
+}
+
 locals {
   spec-icp-ips  = "${distinct(compact(concat(list(var.boot-node), var.icp-master, var.icp-proxy, var.icp-management, var.icp-worker)))}"
   host-group-ips = "${distinct(compact(concat(list(var.boot-node), keys(transpose(var.icp-host-groups)))))}"

@@ -111,20 +111,20 @@ read_from_hostgroups() {
     printf "%s     %s\n" "$node" "${cluster[$node]}" >> /tmp/hosts
   done
 
-
 }
 
 #TODO: Figure out the situation when using separate boot node
 #TODO: Make sure /tmp/hosts is empty, so we don't double up all the time
 update_etchosts() {
   ## Update all hostfiles in all nodes in the cluster
+  ## also remove the line for 127.0.1.1 
   for node in "${!cluster[@]}"; do
     # No need to ssh to self
     if [[ "$node" == "${master_ips[0]}" ]]
     then
-      cat /tmp/hosts | cat - /etc/hosts | sudo tee /etc/hosts
+      cat /tmp/hosts | cat - /etc/hosts | sed -e "/127.0.1.1/d" | sudo tee /etc/hosts
     else
-      cat /tmp/hosts | ssh -i ${WORKDIR}/ssh_key ${node} 'cat - /etc/hosts | sudo tee /etc/hosts'
+      cat /tmp/hosts | ssh -i ${WORKDIR}/ssh_key ${node} 'cat - /etc/hosts | sed -e "/127.0.1.1/d" | sudo tee /etc/hosts'
     fi
   done
 }

@@ -24,7 +24,7 @@ ubuntu_install(){
 python-yaml \
 thin-provisioning-tools \
 lvm2"
-
+  sudo sysctl -w vm.max_map_count=262144
   packages_to_install=""
 
   for package in ${packages_to_check}; do
@@ -43,6 +43,11 @@ lvm2"
 crlinux_install(){
   packages_to_check="\
 PyYAML \
+device-mapper \
+libseccomp \
+libtool-ltdl \
+libcgroup \
+iptables \
 device-mapper-persistent-data \
 lvm2"
 

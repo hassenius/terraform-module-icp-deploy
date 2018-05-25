@@ -62,7 +62,3 @@ for key, value in config_o.iteritems():
 # Write the new configuration
 with open(co, 'w') as of:
   yaml.safe_dump(new_config, of, explicit_start=True, default_flow_style = False)
-
-# Write the new configuration
-with open(co, 'w') as of:
-  yaml.safe_dump(new_config, of, explicit_start=True, default_flow_style = False)

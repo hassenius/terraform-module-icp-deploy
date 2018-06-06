@@ -43,7 +43,7 @@ read_from_groupfiles() {
   declare -A masters
   for m in "${master_ips[@]}"; do
     # No need to ssh to self
-    if [[ "$m" == "${master_ips[0]}" ]]
+    if hostname -I | grep -w $m &>/dev/null
     then
       masters[$m]=$(hostname)
     else
@@ -117,10 +117,10 @@ read_from_hostgroups() {
 #TODO: Make sure /tmp/hosts is empty, so we don't double up all the time
 update_etchosts() {
   ## Update all hostfiles in all nodes in the cluster
-  ## also remove the line for 127.0.1.1 
+  ## also remove the line for 127.0.1.1
   for node in "${!cluster[@]}"; do
     # No need to ssh to self
-    if [[ "$node" == "${master_ips[0]}" ]]
+    if hostname -I | grep -w $node &>/dev/null
     then
       cat /tmp/hosts | cat - /etc/hosts | sed -e "/127.0.1.1/d" | sudo tee /etc/hosts
     else
@@ -130,7 +130,7 @@ update_etchosts() {
 }
 
 
-if [[ -s /tmp/icp-host-groups.json ]]; then
+if [[ $( stat -c%s /tmp/icp-host-groups.json ) -gt 2 ]]; then
   read_from_hostgroups
 elif [[ -s ${WORKDIR}/masterlist.txt ]]; then
   read_from_groupfiles

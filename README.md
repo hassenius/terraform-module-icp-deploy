@@ -18,7 +18,7 @@ If the default SSH user is not the root user, the default user must have passwor
 |icp-proxy           |               |No*     |IP addresses of ICP Proxy nodes. Required if you don't use icp-host-groups        |
 |icp-management      |               |No      |IP addresses of ICP Management Nodes, if management is to be separated from master nodes. Optional|
 | icp-host-groups   |                 |No*     | Map of host types and IPs. See below for details. |
-| boot-node          |               |No*     | IP Address of boot node. Needed when using icp-host-groups or when using a boot node separate from first master node |
+| boot-node          |               |No*     | IP Address of boot node. Needed when using icp-host-groups or when using a boot node separate from first master node. If separate it must be included in `cluster_size` |
 |cluster_size        |               |Yes     |Define total clustersize. Workaround for terraform issue #10857. Normally computed|
 | **ICP Configuration** |
 |icp_config_file     |               |No      |Yaml configuration file for ICP installation|
@@ -30,7 +30,7 @@ If the default SSH user is not the root user, the default user must have passwor
 |icp_priv_key        |               |No      |Private ssh key for ICP Boot master to connect to ICP Cluster. Only use when generate_key = false|
 | **Terraform installation process** |
 |hooks               | |No      |Hooks into different stages in the cluster setup process. See below for details|
-|install-verbosity   | |No      | Verbosity of the icp ansible installer. -v to -vvvv. See ansible documentation for verbosity information | 
+|install-verbosity   | |No      | Verbosity of the icp ansible installer. -v to -vvvv. See ansible documentation for verbosity information |
 | **Terraform to cluster ssh configuration**|
 |ssh_user            |root           |No      |Username for Terraform to ssh into the ICP cluster. This is typically the default user with for the relevant cloud vendor|
 |ssh_key_base64      |               |No      |base64 encoded content of private ssh key|
@@ -94,7 +94,7 @@ To support this an input map called `icp-host-groups` were introduced, and this 
 
 ```hcl
 module "icpprovision" {
-    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.0.0"
+    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.3.1"
 
     icp-master  = ["${softlayer_virtual_guest.icpmaster.ipv4_address}"]
     icp-worker  = ["${softlayer_virtual_guest.icpworker.*.ipv4_address}"]
@@ -134,7 +134,7 @@ module "icpprovision" {
 
 ```hcl
 module "icpprovision" {
-    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.2.0"
+    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.3.1"
 
     # We will define master, management, worker, proxy and va (Vulnerability Assistant) as well as a custom db2 group
     icp-host-groups = {
@@ -259,6 +259,13 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 
 ### Versions and changes
+
+#### 2.3.1
+- Fix issue with non-hostgroups installations not generating hosts files
+- Fix boot-node not being optional in non-hostgroups installations
+- Fix issue with boot node trying to ssh itself
+- Install docker from repository if no other method selected (ubuntu only)
+- Fix apt install issue for prerequisites
 
 #### 2.3.0
 - Add full support for separate boot node

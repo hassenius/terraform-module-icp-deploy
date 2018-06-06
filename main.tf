@@ -100,7 +100,7 @@ resource "null_resource" "icp-boot-preconfig" {
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
-    host          = "${var.boot-node}"
+    host          = "${local.boot-node}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
@@ -190,7 +190,7 @@ resource "null_resource" "icp-boot" {
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
-    host          = "${var.boot-node}"
+    host          = "${local.boot-node}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
@@ -219,7 +219,7 @@ resource "null_resource" "icp-config" {
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
-    host          = "${var.boot-node}"
+    host          = "${local.boot-node}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
@@ -268,7 +268,7 @@ resource "null_resource" "icp-generate-hosts-files" {
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
-    host          = "${var.boot-node}"
+    host          = "${local.boot-node}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
@@ -289,7 +289,7 @@ resource "null_resource" "icp-preinstall-hook" {
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
-    host          = "${var.boot-node}"
+    host          = "${local.boot-node}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
@@ -310,7 +310,7 @@ resource "null_resource" "icp-install" {
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
-    host          = "${var.boot-node}"
+    host          = "${local.boot-node}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
@@ -332,7 +332,7 @@ resource "null_resource" "icp-postinstall-hook" {
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
-    host          = "${var.boot-node}"
+    host          = "${local.boot-node}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
@@ -355,7 +355,7 @@ resource "null_resource" "icp-worker-scaler" {
   }
 
   connection {
-    host          = "${var.boot-node}"
+    host          = "${local.boot-node}"
     user = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent = "${var.ssh_agent}"

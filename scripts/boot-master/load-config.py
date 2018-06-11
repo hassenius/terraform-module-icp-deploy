@@ -23,13 +23,13 @@ with open(ci, 'r') as stream:
 if len(sys.argv) > 1:
   if sys.argv[1] == "merge":
     with open(co, 'r') as stream:
-      try: 
+      try:
         config_o = yaml.load(stream)
       except yaml.YAMLError as exc:
         print(exc)
   else:
     config_o = {}
-    
+
 
 # First accept any changes from supplied config file
 config_o.update(config_f)
@@ -42,6 +42,23 @@ if not 'ansible_user' in config_o and getpass.getuser() != 'root':
   config_o['ansible_user'] = getpass.getuser()
   config_o['ansible_become'] = True
 
+# to handle terraform bug regarding booleans, find strings "true" or "false"
+# and convert them to booleans
+new_config = {}
+for key, value in config_o.iteritems():
+  if type(value) is str or type(value) is unicode:
+    if value.lower() == 'true':
+      new_config[key] = True
+      continue
+    elif value.lower() == 'false':
+      new_config[key] = False
+      continue
+    elif value == '':
+      # skip blanks
+      continue
+
+  new_config[key] = value
+
 # Write the new configuration
 with open(co, 'w') as of:
-  yaml.safe_dump(config_o, of, explicit_start=True, default_flow_style = False)
+  yaml.safe_dump(new_config, of, explicit_start=True, default_flow_style = False)

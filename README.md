@@ -259,6 +259,8 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 
 ### Versions and changes
+#### 2.3.2
+- Fix issues with terraform formatting of boolean values in config.yaml 
 
 #### 2.3.1
 - Fix issue with non-hostgroups installations not generating hosts files

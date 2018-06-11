@@ -53,9 +53,6 @@ for key, value in config_o.iteritems():
     elif value.lower() == 'false':
       new_config[key] = False
       continue
-    elif value == '':
-      # skip blanks
-      continue
 
   new_config[key] = value
 

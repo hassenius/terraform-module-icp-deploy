@@ -36,8 +36,8 @@ else
   if [[ "${package_location:0:3}" == "nfs" ]]
   then
     # Separate out the filename and path
-    nfs_mount=$(dirname ${image_location:4})
-    package_file="${sourcedir}/$(basename ${image_location})"
+    nfs_mount=$(dirname ${package_location:4})
+    package_file="${sourcedir}/$(basename ${package_location})"
     # Mount
     sudo mount.nfs $nfs_mount $sourcedir
   elif [[ "${package_location:0:4}" == "http" ]]

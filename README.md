@@ -259,8 +259,13 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 
 ### Versions and changes
+#### 2.3.3
+- Fix empty icp-master list issue when using icp-host-groups
+- Fix issue with docker package install from nfs source
+- Make docker check silent when docker is not installed
+
 #### 2.3.2
-- Fix issues with terraform formatting of boolean values in config.yaml 
+- Fix issues with terraform formatting of boolean values in config.yaml
 
 #### 2.3.1
 - Fix issue with non-hostgroups installations not generating hosts files

@@ -16,7 +16,7 @@ sourcedir=/tmp/icp-docker
 # Figure out if we're asked to install at all
 
 # Nothing to do here if we have docker already
-if docker --version >> /dev/null
+if docker --version &>> /dev/null
 then
   # Make sure the current user has permission to use docker
   /tmp/icp-common-scripts/docker-user.sh

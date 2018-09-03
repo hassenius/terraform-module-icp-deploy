@@ -21,8 +21,8 @@ If the default SSH user is not the root user, the default user must have passwor
 | boot-node          |               |No*     | IP Address of boot node. Needed when using icp-host-groups or when using a boot node separate from first master node. If separate it must be included in `cluster_size` |
 |cluster_size        |               |Yes     |Define total clustersize. Workaround for terraform issue #10857. Normally computed|
 | **ICP Configuration** |
-|icp_config_file     |               |No      |Yaml configuration file for ICP installation|
-|icp_configuration   |               |No      |Configuration items for ICP installation. See [KnowledgeCenter](https://www.ibm.com/support/knowledgecenter/SSBS6K_2.1.0/installing/config_yaml.html) for reference|
+|icp_config_file     |               |No      |Yaml configuration file for ICP installation.|
+|icp_configuration   |               |No      |Configuration items for ICP installation. See [KnowledgeCenter](https://www.ibm.com/support/knowledgecenter/SSBS6K_2.1.0/installing/config_yaml.html) for reference. Note: Boolean values (true/false) must be supplied as strings|
 |config_strategy     |merge          |No      |Strategy for original config.yaml shipped with ICP. Default is merge, everything else means override. |
 | **ICP Boot node to cluster communication** |
 |generate_key        |True           |No      |Whether to generate a new ssh key for use by ICP Boot Master to communicate with other nodes|
@@ -259,6 +259,10 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 
 ### Versions and changes
+#### 2.3.4
+- Create backup copy of original config.yaml to keep options and comments
+- Support nested dictionaries when parsing `icp_configuration` to convert true/false strings to booleans
+
 #### 2.3.3
 - Fix empty icp-master list issue when using icp-host-groups
 - Fix issue with docker package install from nfs source

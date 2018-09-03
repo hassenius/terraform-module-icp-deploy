@@ -42,20 +42,35 @@ if not 'ansible_user' in config_o and getpass.getuser() != 'root':
   config_o['ansible_user'] = getpass.getuser()
   config_o['ansible_become'] = True
 
-# to handle terraform bug regarding booleans, find strings "true" or "false"
-# and convert them to booleans
-new_config = {}
-for key, value in config_o.iteritems():
-  if type(value) is str or type(value) is unicode:
-    if value.lower() == 'true':
-      new_config[key] = True
-      continue
-    elif value.lower() == 'false':
-      new_config[key] = False
-      continue
 
-  new_config[key] = value
+
+# to handle terraform bug regarding booleans, we must parse dictionaries to find strings "true" or "false"
+# and convert them to booleans
+def parsedict(d):
+
+  t_dict = {}
+  if type(d) is dict:
+    for key, value in d.iteritems():
+
+      # Handle nested dictionaries
+      if type(value) is dict:
+        t_dict[key] = parsedict(value)
+
+      elif type(value) is str or type(value) is unicode:
+        if value.lower() == 'true':
+          t_dict[key] = True
+        elif value.lower() == 'false':
+          t_dict[key] = False
+        else:
+          t_dict[key] = value
+
+      else:
+        # We will not look for booleans in lists and such things
+        t_dict[key] = value
+
+  return t_dict
+
 
 # Write the new configuration
 with open(co, 'w') as of:
-  yaml.safe_dump(new_config, of, explicit_start=True, default_flow_style = False)
+  yaml.safe_dump(parsedict(config_o), of, explicit_start=True, default_flow_style = False)

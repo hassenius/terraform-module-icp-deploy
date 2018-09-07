@@ -38,8 +38,8 @@ then
     if [[ ${image_location} =~ http:.*:.*@http.* ]]
     then
       # Save the auth section and extract username password
-      local auth=${image_location%%@http:*}
-      local userpass=${auth#http:}
+      auth=${image_location%%@http*}
+      userpass=${auth#http:}
       htuser=${userpass%%:*}
       htpass=${userpass#*:}
 
@@ -48,8 +48,11 @@ then
       image_url=${image_location#http:}
     fi
 
-    wget --continue ${htuser:+--username} ${htpass:+--http-password} ${htpass} \
+    # Download the file using auth if provided
+    wget --continue ${htuser:+--user} ${htuser} ${htpass:+--password} ${htpass} \
      -O ${sourcedir}/${filename} "${image_url}"
+
+    # Set the image file name
     image_file="${sourcedir}/${filename}"
   fi
 fi

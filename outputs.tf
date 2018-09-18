@@ -22,3 +22,7 @@ output "icp_version" {
 output "cluster_ips" {
   value = "${local.icp-ips}"
 }
+
+output "default_admin_password" {
+  value = "${lookup(var.icp_configuration, "default_admin_password", random_string.generated_password}"
+}

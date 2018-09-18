@@ -41,8 +41,6 @@ If the default SSH user is not the root user, the default user must have passwor
 | **Docker and ICP Enterprise Edition Image configuration** |
 |docker_package_location|               |No      |http or nfs location of docker installer which ships with ICP. Typically used for RHEL which does not support docker-ce|
 |image_location      |False          |No      |Location of image file. Start with nfs: or http: to indicate protocol to download with|
-|image_file          |/dev/null      |No      |Filename of image. Only required for enterprise edition|
-|enterprise-edition  |False          |No      |Whether to provision enterprise edition (EE) or community edition (CE). EE requires image files to be provided|
 |parallel-image-pull|False          |No      |Download and pull docker images on all nodes in parallel before starting ICP installation. Can speed up installation time|
 
 ## Outputs

@@ -23,24 +23,13 @@ variable "icp-management" {
   default     = []
 }
 
-
-variable "enterprise-edition" {
-  description = "Whether to provision enterprise edition (EE) or community edition (CE). EE requires image files to be provided"
-  default     = false
-}
-
 variable "parallel-image-pull" {
   description = "Download and pull docker images on all nodes in parallel before starting ICP installation."
   default     = false
 }
 
-variable "image_file" {
-  description = "Filename of image. Only required for enterprise edition"
-  default     = "/dev/null"
-}
-
 variable "image_location" {
-  description = "Alternative to image_file, if image is accessible to the new vm over nfs or http"
+  description = "NFS or HTTP location where image tarball can be accessed"
   default     = "false"
 }
 

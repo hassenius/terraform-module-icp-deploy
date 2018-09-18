@@ -59,11 +59,6 @@ variable "ssh_user" {
   default     = "root"
 }
 
-variable "ssh_key" {
-  description = "Private key corresponding to the public key that the cloud servers are provisioned with. DEPRECATED. Use ssh_key_file or ssh_key_base64"
-  default     = "~/.ssh/id_rsa"
-}
-
 variable "ssh_key_base64" {
   description = "base64 encoded content of private ssh key"
   default     = ""

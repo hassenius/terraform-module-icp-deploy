@@ -46,7 +46,7 @@ If the default SSH user is not the root user, the default user must have passwor
 |image_location      |False          |No      |Location of image file. Start with nfs: or http: to indicate protocol to download with|
 |image_file          |/dev/null      |No      |Filename of image. Only required for enterprise edition|
 |enterprise-edition  |False          |No      |Whether to provision enterprise edition (EE) or community edition (CE). EE requires image files to be provided|
-|parallell-image-pull|False          |No      |Download and pull docker images on all nodes in parallell before starting ICP installation. Can speed up installation time|
+|parallel-image-pull|False          |No      |Download and pull docker images on all nodes in parallel before starting ICP installation. Can speed up installation time|
 
 ## Outputs
 
@@ -217,7 +217,7 @@ module "icpprovision" {
 
     icp-version    = "2.1.0.1-ee"
     image_location = "nfs:fsf-lon0601b-fz.adn.networklayer.com:/IBM02S6275/data01/ibm-cloud-private-x86_64-2.1.0.1.tar.gz"
-    parallell-pull = True
+    parallel-pull = True
 
     cluster_size  = "${var.master["nodes"] + var.worker["nodes"] + var.proxy["nodes"]}"
 
@@ -273,11 +273,13 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 
 ### Versions and changes
-#### 2.4.2
-- Added support to be able to deploy ICP 3.1.1 on RedHat and CentOS. (Tested only on ICP 3.1.1-CE with CentOS 7)
-
-#### 2.4.1
-- Added missed prereq in the main.tf file
+#### 3.0.0
+- Fix typo in parallel-image-load variable
+- Default to generate strong default admin password if no password is specified
+- Depcrecate image_file
+- Deprecate ssh_key_file
+- Overhaul of scaler function
+- Add support for automatic installation of docker on RHEL and Centos
 
 #### 2.4.0
 - Add support for local hooks
@@ -343,7 +345,7 @@ To avoid breaking existing templates which depends on the module it is recommend
 - Added support for ssh bastion host
 - Added support for dedicated management hosts
 - Split up null_resource provisioners to increase granularity
-- Added support for parallell load of EE images
+- Added support for parallel load of EE images
 - Various fixes
 
 #### 1.0.0

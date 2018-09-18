@@ -29,8 +29,8 @@ variable "enterprise-edition" {
   default     = false
 }
 
-variable "parallell-image-pull" {
-  description = "Download and pull docker images on all nodes in parallell before starting ICP installation."
+variable "parallel-image-pull" {
+  description = "Download and pull docker images on all nodes in parallel before starting ICP installation."
   default     = false
 }
 

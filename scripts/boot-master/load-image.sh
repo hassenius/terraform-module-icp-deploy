@@ -6,8 +6,7 @@ echo "Got first parameter $1"
 echo "Second parameter $2"
 echo "Third parameter $3"
 image=$1
-image_file=$2
-image_location=$3
+image_location=$2
 sourcedir=/opt/ibm/cluster/images
 
 source /tmp/icp-bootmaster-scripts/functions.sh

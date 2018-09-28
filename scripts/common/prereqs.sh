@@ -8,7 +8,7 @@
 #HOSTNAME=$1
 
 LOGFILE=/tmp/prereqs.log
-exec > $LOGFILE 2>&1
+exec 1>>$LOGFILE 2> >(tee -a $LOGFILE >&2)
 
 #Find Linux Distro
 if grep -q -i ubuntu /etc/*release

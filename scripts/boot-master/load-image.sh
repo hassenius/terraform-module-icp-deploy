@@ -1,6 +1,6 @@
 #!/bin/bash
 LOGFILE=/tmp/loadimage.log
-exec  > $LOGFILE 2>&1
+exec 1>>$LOGFILE 2> >(tee -a $LOGFILE >&2)
 
 echo "Got first parameter $1"
 echo "Second parameter $2"

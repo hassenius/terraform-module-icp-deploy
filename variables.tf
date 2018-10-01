@@ -39,6 +39,16 @@ variable "image_locations" {
   default     = []
 }
 
+variable "image_location_user" {
+  description = "Username if authentication required for image_location"
+  default     = ""
+}
+
+variable "image_location_pass" {
+  description = "Pass if authentication required for image_location"
+  default     = ""
+}
+
 variable "docker_package_location" {
   description = "http or nfs location of docker installer which ships with ICP. Option for RHEL which does not support docker-ce"
   default     = ""

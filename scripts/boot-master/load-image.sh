@@ -33,7 +33,25 @@ then
     # Figure out what we should name the file
     filename="ibm-cloud-private-x86_64-${tag%-ee}.tar.gz"
     mkdir -p ${sourcedir}
-    wget --continue -O ${sourcedir}/${filename} "${image_location#http:}"
+    # Figure out if we need auth
+    if [[ ${image_location} =~ http:.*:.*@http.* ]]
+    then
+      # Save the auth section and extract username password
+      auth=${image_location%%@http*}
+      userpass=${auth#http:}
+      htuser=${userpass%%:*}
+      htpass=${userpass#*:}
+
+      image_url=${image_location##*@}
+    else
+      image_url=${image_location#http:}
+    fi
+
+    # Download the file using auth if provided
+    wget --continue ${htuser:+--user} ${htuser} ${htpass:+--password} ${htpass} \
+     -O ${sourcedir}/${filename} "${image_url}"
+
+    # Set the image file name
     image_file="${sourcedir}/${filename}"
   fi
 fi

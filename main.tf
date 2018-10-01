@@ -1,7 +1,14 @@
-
+########
+## Helpers
+########
 # Generate a new key if this is required
 resource "tls_private_key" "icpkey" {
   algorithm   = "RSA"
+}
+
+resource "random_string" "generated_password" {
+  length = 16
+  special = false
 }
 
 ## Cluster Pre-config hook
@@ -147,6 +154,17 @@ resource "null_resource" "icp-docker" {
   }
 }
 
+
+locals {
+  load_image_options = "${join(" -", compact(list(
+    "-i ${var.icp-version}",
+    var.image_location == "" ? "" : "l ${var.image_location}",
+    length(var.image_locations) == 0 ? "" : "l ${join(" -l ", var.image_locations )}",
+    var.image_location_user == "" ? "" : "u ${var.image_location_user}",
+    var.image_location_pass == "" ? "" : "p ${var.image_location_pass}"
+  )))}"
+}
+
 resource "null_resource" "icp-image" {
   depends_on = ["null_resource.icp-docker"]
 
@@ -164,7 +182,7 @@ resource "null_resource" "icp-image" {
   provisioner "remote-exec" {
     inline = [
       "echo \"Loading image ${var.icp-version}\"",
-      "/tmp/icp-bootmaster-scripts/load-image.sh ${var.icp-version} \"${var.image_location}\" "
+      "/tmp/icp-bootmaster-scripts/load-image.sh ${local.load_image_options}"
     ]
   }
 }
@@ -218,7 +236,7 @@ resource "null_resource" "icp-config" {
       "/tmp/icp-bootmaster-scripts/copy_cluster_skel.sh ${var.icp-version}",
       "sudo chown ${var.ssh_user} /opt/ibm/cluster/*",
       "chmod 600 /opt/ibm/cluster/ssh_key",
-      "python /tmp/icp-bootmaster-scripts/load-config.py ${var.config_strategy} ${random_string.generated_password}"
+      "python /tmp/icp-bootmaster-scripts/load-config.py ${var.config_strategy} ${random_string.generated_password.result}"
     ]
   }
 

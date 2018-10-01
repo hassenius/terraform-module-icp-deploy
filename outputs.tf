@@ -24,5 +24,5 @@ output "cluster_ips" {
 }
 
 output "default_admin_password" {
-  value = "${lookup(var.icp_configuration, "default_admin_password", random_string.generated_password}"
+  value = "${lookup(var.icp_configuration, "default_admin_password", random_string.generated_password.result)}"
 }

@@ -30,7 +30,13 @@ variable "parallel-image-pull" {
 
 variable "image_location" {
   description = "NFS or HTTP location where image tarball can be accessed"
-  default     = "false"
+  default     = ""
+}
+
+variable "image_locations" {
+  type        = "list"
+  description = "List of HTTP locations where image tarballs can be accessed. Typically used in multi-arch deployment"
+  default     = []
 }
 
 variable "docker_package_location" {

@@ -45,7 +45,8 @@ if not 'ansible_user' in config_o and getpass.getuser() != 'root':
 
 
 # to handle terraform bug regarding booleans, we must parse dictionaries to find strings "true" or "false"
-# and convert them to booleans
+# and convert them to booleans.
+# Also skip blanks as yaml.safe_dump dumps them as '' which ansible installer does not like
 def parsedict(d):
 
   t_dict = {}
@@ -61,6 +62,9 @@ def parsedict(d):
           t_dict[key] = True
         elif value.lower() == 'false':
           t_dict[key] = False
+        elif value == '':
+          # Skip blanks
+          continue
         else:
           t_dict[key] = value
 

@@ -259,6 +259,9 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 
 ### Versions and changes
+#### 2.3.5
+- Skip blanks when generating config.yaml as yaml.safe_dump exports them as '' which ansible installer doesn't like
+
 #### 2.3.4
 - Create backup copy of original config.yaml to keep options and comments
 - Support nested dictionaries when parsing `icp_configuration` to convert true/false strings to booleans

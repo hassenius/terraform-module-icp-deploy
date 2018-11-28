@@ -37,7 +37,18 @@ lvm2"
     # attempt to install, probably won't work airgapped but we'll get an error immediately
     echo "Attempting to install: ${packages_to_install} ..."
     sudo apt-get update
+    while [ $? -ne 0 ]; do
+      echo "Another process has acquired the apt-get update lock; waiting 10s" 1>&2
+      sleep 10;
+      sudo apt-get update
+    done
+
     sudo apt-get install -y ${packages_to_install}
+    while [ $? -ne 0 ]; do
+      echo "Another process has acquired the apt-get install/upgrade; waiting 10s" 1>&2
+      sleep 10;
+      sudo apt-get install -y ${packages_to_install}
+    done
   fi
 }
 

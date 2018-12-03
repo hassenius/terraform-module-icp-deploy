@@ -307,8 +307,6 @@ resource "null_resource" "icp-preinstall-hook" {
 # Local preinstall hook
 resource "null_resource" "local-preinstall-hook" {
   depends_on = ["null_resource.icp-preinstall-hook"]
-  count = "${contains(keys(var.hooks), "local-preinstall") ? 1 : 0}"
-
   provisioner "local-exec" {
     command = "${var.hooks["local-preinstall"]}"
   }
@@ -339,8 +337,6 @@ resource "null_resource" "icp-install" {
 # Local postinstall hook
 resource "null_resource" "local-postinstall-hook" {
   depends_on = ["null_resource.icp-install"]
-  count = "${contains(keys(var.hooks), "local-postinstall") ? 1 : 0}"
-
   provisioner "local-exec" {
     command = "${var.hooks["local-postinstall"]}"
   }

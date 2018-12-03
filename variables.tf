@@ -133,7 +133,10 @@ variable "config_strategy" {
 variable "hooks" {
   description = "Hooks into different stages in the cluster setup process"
   type        = "map"
-  default     = {}
+  default     = {
+    local-preinstall  = "echo -n"
+    local-postinstall = "echo -n"
+  }
 }
 
 variable "icp-host-groups" {

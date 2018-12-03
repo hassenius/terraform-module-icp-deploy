@@ -70,17 +70,28 @@ So for exmaple
 `myuser:SomeLongPassword@myprivateregistry.local/ibmcom/icp-inception:2.1.0.2`
 
 
-### Hooks
-It is possible to execute arbritrary commands between various phases of the cluster setup and installation process.
+### Remote Execution Hooks
+It is possible to execute arbitrary commands between various phases of the cluster setup and installation process.
 Currently, the following hooks are defined
 
-| Hook name                 | Where executed | When executed                                              |
+| Hook name          | Where executed | When executed                                              |
 |--------------------|----------------|------------------------------------------------------------|
 | cluster-preconfig  | all nodes      | Before any of the module scripts |
-| cluster-postconfig | all nodes      | After preprequisites are installed |
+| cluster-postconfig | all nodes      | After prerequisites are installed |
 | boot-preconfig     | boot master    | Before any module scripts on boot master |
 | preinstall         | boot master    | After configuration image load and configuration generation|
 | postinstall        | boot master    | After successful ICP installation                          |
+
+### Local Execution Hooks
+It is possible to execute arbitrary commands between various phases of the cluster setup and installation process.
+Currently, the following hooks are defined
+
+| Hook name          | When executed                                              |
+|--------------------|------------------------------------------------------------|
+| local-preinstall   | After configuration and preinstall remote hook |
+| local-postinstall  | After successful ICP installation |
+
+These hooks support the execution of a single command or a local script. While this is a local-exec [command](https://www.terraform.io/docs/provisioners/local-exec.html#command), passing additional interpreter/environment parameters are not supported and therefore everything will be treated as a BASH script.
 
 
 ### Host groups

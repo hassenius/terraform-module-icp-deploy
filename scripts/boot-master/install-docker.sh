@@ -10,7 +10,18 @@ exec  &> >(tee -a $LOGFILE)
 
 echo "Got first parameter $1"
 package_location=$1
+echo "Got second parameter $2"
+docker_image=$2
+echo "Got second parameter $3"
+docker_version=$3
 sourcedir=/tmp/icp-docker
+
+if [[ -z "${docker_version}" -eq "latest" ]]
+then
+  docker_version=""
+else
+  docker_version="=${docker_version}"
+fi 
 
 # TODO: Deal with installation from apt repository for linux
 # Figure out if we're asked to install at all
@@ -91,7 +102,7 @@ then
 
   sudo apt-get -q update
 
-  sudo apt-get -y -q install docker-ce
+  sudo apt-get -y -q install ${docker_image}${docker_version}
 
   # Make sure our user is added to the docker group if needed
   /tmp/icp-common-scripts/docker-user.sh

@@ -152,6 +152,16 @@ variable "install-verbosity" {
   default     = ""
 }
 
+variable "docker_image_name" {
+  description = "Name of docker image to install; only supported for Ubuntu"
+  default = "docker-ce"
+}
+
+variable "docker_version" {
+  description = "Version of docker image to install; only supported for Ubuntu"
+  default = "latest"
+}
+
 locals {
   spec-icp-ips  = "${distinct(compact(concat(list(var.boot-node), var.icp-master, var.icp-proxy, var.icp-management, var.icp-worker)))}"
   host-group-ips = "${distinct(compact(concat(list(var.boot-node), keys(transpose(var.icp-host-groups)))))}"

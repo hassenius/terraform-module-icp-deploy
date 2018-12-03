@@ -147,7 +147,7 @@ resource "null_resource" "icp-docker" {
   provisioner "remote-exec" {
     inline = [
       "chmod a+x /tmp/icp-bootmaster-scripts/*.sh",
-      "/tmp/icp-bootmaster-scripts/install-docker.sh \"${var.docker_package_location}\" "
+      "/tmp/icp-bootmaster-scripts/install-docker.sh \"${var.docker_package_location}\" \"${var.docker_image_name}\" \"${var.docker_version}\""
     ]
   }
 }

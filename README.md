@@ -40,6 +40,8 @@ If the default SSH user is not the root user, the default user must have passwor
 |bastion_host        |               |No      |Specify hostname or IP to connect to nodes through a SSH bastion host. Assumes same SSH key and username as cluster nodes|
 | **Docker and ICP Enterprise Edition Image configuration** |
 |docker_package_location|               |No      |http or nfs location of docker installer which ships with ICP. Typically used for RHEL which does not support docker-ce|
+|docker_image_name   |docker-ce      |No      |Name of docker image to install; only supported for Ubuntu|
+|docker_version      |latest         |No      |Version of docker image to install; only supported for Ubuntu|
 |image_location      |False          |No      |Location of image file. Start with nfs: or http: to indicate protocol to download with|
 |image_file          |/dev/null      |No      |Filename of image. Only required for enterprise edition|
 |enterprise-edition  |False          |No      |Whether to provision enterprise edition (EE) or community edition (CE). EE requires image files to be provided|

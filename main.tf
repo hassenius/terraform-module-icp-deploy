@@ -304,9 +304,20 @@ resource "null_resource" "icp-preinstall-hook" {
   }
 }
 
+# Local preinstall hook
+resource "null_resource" "local-preinstall-hook" {
+  depends_on = ["null_resource.icp-preinstall-hook"]
+  count = "${contains(keys(var.hooks), "local-preinstall") ? 1 : 0}"
+
+  provisioner "local-exec" {
+    command = "${var.hooks["local-preinstall"]}"
+  }
+
+}
+
 # Start the installer
 resource "null_resource" "icp-install" {
-  depends_on = ["null_resource.icp-preinstall-hook", "null_resource.icp-generate-hosts-files"]
+  depends_on = ["null_resource.local-preinstall-hook", "null_resource.icp-generate-hosts-files"]
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
@@ -323,6 +334,17 @@ resource "null_resource" "icp-install" {
       "/tmp/icp-bootmaster-scripts/start_install.sh ${var.icp-version} ${var.install-verbosity}"
     ]
   }
+}
+
+# Local postinstall hook
+resource "null_resource" "local-postinstall-hook" {
+  depends_on = ["null_resource.icp-install"]
+  count = "${contains(keys(var.hooks), "local-postinstall") ? 1 : 0}"
+
+  provisioner "local-exec" {
+    command = "${var.hooks["local-postinstall"]}"
+  }
+
 }
 
 # Hook for Boot node

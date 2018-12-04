@@ -134,8 +134,13 @@ variable "hooks" {
   description = "Hooks into different stages in the cluster setup process"
   type        = "map"
   default     = {
-    local-preinstall  = "echo -n"
-    local-postinstall = "echo -n"
+    cluster-preconfig  = "echo -n"
+    cluster-postconfig = "echo -n"
+    boot-preconfig     = "echo -n"
+    preinstall         = "echo -n"
+    postinstall        = "echo -n"
+    local-preinstall   = "echo -n"
+    local-postinstall  = "echo -n"
   }
 }
 

@@ -11,7 +11,7 @@ resource "tls_private_key" "icpkey" {
 
 ## Cluster Pre-config hook
 resource "null_resource" "icp-cluster-preconfig-hook" {
-  count = "${contains(keys(var.hooks), "cluster-preconfig") ? var.cluster_size : 0}"
+  count = "${var.cluster_size}"
 
   connection {
       host          = "${element(local.icp-ips, count.index)}"
@@ -74,7 +74,7 @@ resource "null_resource" "icp-cluster" {
 ## Cluster postconfig hook
 resource "null_resource" "icp-cluster-postconfig-hook" {
   depends_on = ["null_resource.icp-cluster"]
-  count = "${contains(keys(var.hooks), "cluster-postconfig") ? var.cluster_size : 0}"
+  count = "${var.cluster_size}"
 
   connection {
       host          = "${element(local.icp-ips, count.index)}"
@@ -96,7 +96,6 @@ resource "null_resource" "icp-cluster-postconfig-hook" {
 # First hook for Boot node
 resource "null_resource" "icp-boot-preconfig" {
   depends_on = ["null_resource.icp-cluster-postconfig-hook", "null_resource.icp-cluster"]
-  count = "${contains(keys(var.hooks), "boot-preconfig") ? 1 : 0}"
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
@@ -285,7 +284,6 @@ resource "null_resource" "icp-generate-hosts-files" {
 # Boot node hook
 resource "null_resource" "icp-preinstall-hook" {
   depends_on = ["null_resource.icp-generate-hosts-files"]
-  count = "${contains(keys(var.hooks), "preinstall") ? 1 : 0}"
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
@@ -346,7 +344,6 @@ resource "null_resource" "local-postinstall-hook" {
 # Hook for Boot node
 resource "null_resource" "icp-postinstall-hook" {
   depends_on = ["null_resource.icp-install"]
-  count = "${contains(keys(var.hooks), "postinstall") ? 1 : 0}"
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {

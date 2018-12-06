@@ -61,13 +61,13 @@ for image_location in ${locations[@]} ; do
       exit 1
     fi
 
-    # Download the file using auth if provided
-    echo "Downloading ${image_url}" >&2
-    wget --continue ${username:+--user} ${username} ${password:+--password} ${password} \
-     -O ${sourcedir}/${filename} "${image_url}"
-
-    # Set the image file name if we're on the same platform
+    # Download the image and set the image file name if we're on the same platform
     if [[ ${filename} =~ .*$(uname -m).* ]]; then
+      # Download the file using auth if provided
+      echo "Downloading ${image_url}" >&2
+      wget --continue ${username:+--user} ${username} ${password:+--password} ${password} \
+      -O ${sourcedir}/${filename} "${image_url}"
+
       echo "Setting image_file to ${sourcedir}/${filename}"
       image_file="${sourcedir}/${filename}"
     fi

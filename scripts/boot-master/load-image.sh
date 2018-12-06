@@ -12,7 +12,7 @@ declare -a locations
 while getopts ":l:i:s:u:p:" opt; do
   case $opt in
     l)
-      locations+=${OPTARG}
+      locations+="${OPTARG} "
       ;;
     u)
       username=${OPTARG}
@@ -64,9 +64,9 @@ for image_location in ${locations[@]} ; do
     # Download the image and set the image file name if we're on the same platform
     if [[ ${filename} =~ .*$(uname -m).* ]]; then
       # Download the file using auth if provided
-      echo "Downloading ${image_url}" >&2
+      echo "Downloading ${image_location}" >&2
       wget --continue ${username:+--user} ${username} ${password:+--password} ${password} \
-      -O ${sourcedir}/${filename} "${image_url}"
+      -O ${sourcedir}/${filename} "${image_location}"
 
       echo "Setting image_file to ${sourcedir}/${filename}"
       image_file="${sourcedir}/${filename}"

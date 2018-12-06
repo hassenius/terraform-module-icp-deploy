@@ -42,7 +42,10 @@ If the default SSH user is not the root user, the default user must have passwor
 |docker_package_location|               |No      |http or nfs location of docker installer which ships with ICP. Typically used for RHEL which does not support docker-ce|
 |docker_image_name   |docker-ce      |No      |Name of docker image to install; only supported for Ubuntu|
 |docker_version      |latest         |No      |Version of docker image to install; only supported for Ubuntu|
-|image_location      |False          |No      |Location of image file. Start with nfs: or http: to indicate protocol to download with|
+|image_location      |          |No      |Location of image file. Start with nfs: or http: to indicate protocol to download with|
+|image_locations     |          |No      |List of image file locations to pull; same rules as `image_location`. Can be used to installing multi-arch clusters|
+|image_location_user |          |No      |Username to use for authenticating with the image location |
+|image_location_pass |          |No      |Password to use for authenticating with the image location | 
 |parallel-image-pull|False          |No      |Download and pull docker images on all nodes in parallel before starting ICP installation. Can speed up installation time|
 
 ## Outputs

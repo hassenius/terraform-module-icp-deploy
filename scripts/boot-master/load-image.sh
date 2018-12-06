@@ -1,16 +1,42 @@
 #!/bin/bash
 LOGFILE=/tmp/loadimage.log
-exec  > $LOGFILE 2>&1
+exec 1>>$LOGFILE 2> >(tee -a $LOGFILE >&2)
 
-echo "Got first parameter $1"
-echo "Second parameter $2"
-echo "Third parameter $3"
-image=$1
-image_file=$2
-image_location=$3
-sourcedir=/opt/ibm/cluster/images
-
+echo "Got the parameters $@"
+# Defaults
 source /tmp/icp-bootmaster-scripts/functions.sh
+sourcedir=/opt/ibm/cluster/images
+declare -a locations
+
+# Parse options
+while getopts ":l:i:s:u:p:" opt; do
+  case $opt in
+    l)
+      locations+=${OPTARG}
+      ;;
+    u)
+      username=${OPTARG}
+      ;;
+    p)
+      password=${OPTARG}
+      ;;
+    i)
+      image=${OPTARG}
+      ;;
+    s)
+      echo "Will overwrite default sourcedir to ${OPTARG}"
+      sourcedir=${OPTARG}
+      ;;
+    \?)
+      echo "Invalid option : -$OPTARG in commmand $0 $*" >&2
+      exit 1
+      ;;
+    :)
+      echo "Missing option argument for -$OPTARG in command $0 $*" >&2
+      exit 1
+      ;;
+  esac
+done
 
 
 # Figure out the version
@@ -18,29 +44,47 @@ source /tmp/icp-bootmaster-scripts/functions.sh
 parse_icpversion ${image}
 echo "registry=${registry:-not specified} org=$org repo=$repo tag=$tag"
 
-if [[ "${image_location}" != "false" ]]
-then
+# Make sure sourcedir exists, in case we need to donwload some archives
+mkdir -p ${sourcedir}
+
+for image_location in ${locations[@]} ; do
+
   # Decide which protocol to use
-  if [[ "${image_location:0:3}" == "nfs" ]]
-  then
+  if [[ "${image_location:0:4}" == "http" ]]; then
+    # Extract filename from URL if possible
+    if [[ "${image_location: -2}" == "gz" ]]; then
+      # Assume a sensible filename can be extracted from URL
+      filename=$(basename ${image_location})
+    else
+      # TODO We'll need to attempt some magic to extract the filename
+      echo "Not able to determine filename from URL ${image_location}" >&2
+      exit 1
+    fi
+
+    # Download the file using auth if provided
+    echo "Downloading ${image_url}" >&2
+    wget --continue ${username:+--user} ${username} ${password:+--password} ${password} \
+     -O ${sourcedir}/${filename} "${image_url}"
+
+    # Set the image file name if we're on the same platform
+    if [[ ${filename} =~ .*$(uname -m).* ]]; then
+      echo "Setting image_file to ${sourcedir}/${filename}"
+      image_file="${sourcedir}/${filename}"
+    fi
+  else
+    # Assume NFS since this is the only other supported protocol
     # Separate out the filename and path
-    nfs_mount=$(dirname ${image_location:4})
+    nfs_mount=$(dirname ${image_location})
     image_file="${sourcedir}/$(basename ${image_location})"
     mkdir -p ${sourcedir}
     # Mount
     sudo mount.nfs $nfs_mount $sourcedir
-  elif [[ "${image_location:0:4}" == "http" ]]
-  then
-    # Figure out what we should name the file
-    filename="ibm-cloud-private-x86_64-${tag%-ee}.tar.gz"
-    mkdir -p ${sourcedir}
-    wget --continue -O ${sourcedir}/${filename} "${image_location#http:}"
-    image_file="${sourcedir}/${filename}"
-  fi
-fi
 
-if [[ -s "$image_file" ]]
-then
+  fi
+done
+
+if [[ -s "$image_file" ]]; then
+  echo "Loading ${image_file} This can take a very long time." >&2
   tar xf ${image_file} -O | sudo docker load
 else
   # If we don't have an image locally we'll pull from docker registry

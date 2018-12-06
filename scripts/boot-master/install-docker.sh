@@ -6,7 +6,7 @@
 ##
 ###############################
 LOGFILE=/tmp/install-docker.log
-exec  &> >(tee -a $LOGFILE)
+exec 1>>$LOGFILE 2> >(tee -a $LOGFILE >&2)
 
 echo "Got first parameter $1"
 package_location=$1

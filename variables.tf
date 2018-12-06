@@ -23,25 +23,30 @@ variable "icp-management" {
   default     = []
 }
 
-
-variable "enterprise-edition" {
-  description = "Whether to provision enterprise edition (EE) or community edition (CE). EE requires image files to be provided"
+variable "parallel-image-pull" {
+  description = "Download and pull docker images on all nodes in parallel before starting ICP installation."
   default     = false
-}
-
-variable "parallell-image-pull" {
-  description = "Download and pull docker images on all nodes in parallell before starting ICP installation."
-  default     = false
-}
-
-variable "image_file" {
-  description = "Filename of image. Only required for enterprise edition"
-  default     = "/dev/null"
 }
 
 variable "image_location" {
-  description = "Alternative to image_file, if image is accessible to the new vm over nfs or http"
-  default     = "false"
+  description = "NFS or HTTP location where image tarball can be accessed"
+  default     = ""
+}
+
+variable "image_locations" {
+  type        = "list"
+  description = "List of HTTP locations where image tarballs can be accessed. Typically used in multi-arch deployment"
+  default     = []
+}
+
+variable "image_location_user" {
+  description = "Username if authentication required for image_location"
+  default     = ""
+}
+
+variable "image_location_pass" {
+  description = "Pass if authentication required for image_location"
+  default     = ""
 }
 
 variable "docker_package_location" {
@@ -57,11 +62,6 @@ variable  "icp-version" {
 variable "ssh_user" {
   description = "Username to ssh into the ICP cluster. This is typically the default user with for the relevant cloud vendor"
   default     = "root"
-}
-
-variable "ssh_key" {
-  description = "Private key corresponding to the public key that the cloud servers are provisioned with. DEPRECATED. Use ssh_key_file or ssh_key_base64"
-  default     = "~/.ssh/id_rsa"
 }
 
 variable "ssh_key_base64" {
@@ -167,6 +167,6 @@ locals {
   host-group-ips = "${distinct(compact(concat(list(var.boot-node), keys(transpose(var.icp-host-groups)))))}"
   icp-ips       = "${distinct(concat(local.spec-icp-ips, local.host-group-ips))}"
   cluster_size  = "${length(concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management))}"
-  ssh_key       = "${var.ssh_key_base64 == "" ? file(coalesce(var.ssh_key_file, "/dev/null")) : base64decode(var.ssh_key_base64)}"
+  ssh_key       = "${var.ssh_key_base64 == "" ? file(coalesce(var.ssh_key_file, "${path.module}/main.tf")) : base64decode(var.ssh_key_base64)}"
   boot-node     = "${element(compact(concat(list(var.boot-node),var.icp-master)), 0)}"
 }

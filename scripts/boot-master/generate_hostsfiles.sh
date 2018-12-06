@@ -1,6 +1,7 @@
 #!/bin/bash
 LOGFILE=/tmp/generate_hostsfiles.log
-exec  > $LOGFILE 2>&1
+exec 1>>$LOGFILE 2> >(tee -a $LOGFILE >&2)
+
 WORKDIR=/opt/ibm/cluster
 ICPDIR=$WORKDIR
 

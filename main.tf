@@ -1,12 +1,14 @@
-
+########
+## Helpers
+########
 # Generate a new key if this is required
 resource "tls_private_key" "icpkey" {
-  # count       = "${var.generate_key ? 1 : 0}" # Generate the key anyways, since the output logic needs it for interpolation
   algorithm   = "RSA"
+}
 
-  provisioner "local-exec" {
-    command = "cat > privatekey.pem <<EOL\n${tls_private_key.icpkey.private_key_pem}\nEOL"
-  }
+resource "random_string" "generated_password" {
+  length = 16
+  special = false
 }
 
 ## Cluster Pre-config hook
@@ -118,9 +120,9 @@ resource "null_resource" "icp-boot-preconfig" {
 resource "null_resource" "icp-docker" {
   depends_on = ["null_resource.icp-boot-preconfig", "null_resource.icp-cluster"]
 
-  count = "${var.parallell-image-pull ? var.cluster_size : "1"}"
+  count = "${var.parallel-image-pull ? var.cluster_size : "1"}"
 
-  # Boot node is always the first entry in the IP list, so if we're not pulling in parallell this will only happen on boot node
+  # Boot node is always the first entry in the IP list, so if we're not pulling in parallel this will only happen on boot node
   connection {
     host          = "${element(local.icp-ips, count.index)}"
     user          = "${var.ssh_user}"
@@ -152,12 +154,23 @@ resource "null_resource" "icp-docker" {
   }
 }
 
+
+locals {
+  load_image_options = "${join(" -", compact(list(
+    "-i ${var.icp-version}",
+    var.image_location == "" ? "" : "l ${var.image_location}",
+    length(var.image_locations) == 0 ? "" : "l ${join(" -l ", var.image_locations )}",
+    var.image_location_user == "" ? "" : "u ${var.image_location_user}",
+    var.image_location_pass == "" ? "" : "p ${var.image_location_pass}"
+  )))}"
+}
+
 resource "null_resource" "icp-image" {
   depends_on = ["null_resource.icp-docker"]
 
-  count = "${var.parallell-image-pull ? var.cluster_size : "1"}"
+  count = "${var.parallel-image-pull ? var.cluster_size : "1"}"
 
-  # Boot node is always the first entry in the IP list, so if we're not pulling in parallell this will only happen on boot node
+  # Boot node is always the first entry in the IP list, so if we're not pulling in parallel this will only happen on boot node
   connection {
     host          = "${element(local.icp-ips, count.index)}"
     user          = "${var.ssh_user}"
@@ -166,18 +179,10 @@ resource "null_resource" "icp-image" {
     bastion_host  = "${var.bastion_host}"
   }
 
-  # If this is enterprise edition we'll need to copy the image file over and load it in local repository
-  // We'll need to find another workaround while tf does not support count for this
-  provisioner "file" {
-      # count = "${var.enterprise-edition ? 1 : 0}"
-      source = "${var.enterprise-edition ? var.image_file : "/dev/null" }"
-      destination = "/tmp/${basename(var.image_file)}"
-  }
-
   provisioner "remote-exec" {
     inline = [
       "echo \"Loading image ${var.icp-version}\"",
-      "/tmp/icp-bootmaster-scripts/load-image.sh ${var.icp-version} /tmp/${basename(var.image_file)} \"${var.image_location}\" "
+      "/tmp/icp-bootmaster-scripts/load-image.sh ${local.load_image_options}"
     ]
   }
 }
@@ -231,7 +236,7 @@ resource "null_resource" "icp-config" {
       "/tmp/icp-bootmaster-scripts/copy_cluster_skel.sh ${var.icp-version}",
       "sudo chown ${var.ssh_user} /opt/ibm/cluster/*",
       "chmod 600 /opt/ibm/cluster/ssh_key",
-      "python /tmp/icp-bootmaster-scripts/load-config.py ${var.config_strategy}"
+      "python /tmp/icp-bootmaster-scripts/load-config.py ${var.config_strategy} ${random_string.generated_password.result}"
     ]
   }
 

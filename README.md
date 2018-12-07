@@ -30,6 +30,7 @@ If the default SSH user is not the root user, the default user must have passwor
 |icp_priv_key        |               |No      |Private ssh key for ICP Boot master to connect to ICP Cluster. Only use when generate_key = false|
 | **Terraform installation process** |
 |hooks               | |No      |Hooks into different stages in the cluster setup process. See below for details|
+|on_hook_failure     |fail      |Behavior when hooks fail. Anything other than `fail` will `continue`|
 |install-verbosity   | |No      | Verbosity of the icp ansible installer. -v to -vvvv. See ansible documentation for verbosity information |
 | **Terraform to cluster ssh configuration**|
 |ssh_user            |root           |No      |Username for Terraform to ssh into the ICP cluster. This is typically the default user with for the relevant cloud vendor|

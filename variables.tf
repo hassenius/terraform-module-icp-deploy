@@ -144,6 +144,11 @@ variable "hooks" {
   }
 }
 
+variable "on_hook_failure" {
+  description = "Behavior when hooks fail. Anything other than `fail` will `continue`"
+  default     = "fail"
+}
+
 variable "icp-host-groups" {
   description = "Map of host groups and IPs in the cluster. Needs at least master, proxy and worker"
   type        = "map"

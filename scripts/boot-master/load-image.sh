@@ -65,7 +65,7 @@ for image_location in ${locations[@]} ; do
     if [[ ${filename} =~ .*$(uname -m).* ]]; then
       # Download the file using auth if provided
       echo "Downloading ${image_location}" >&2
-      wget -nv --continue ${username:+--user} ${username} ${password:+--password} ${password} \
+      wget --continue -a $LOGFILE-wget ${username:+--user} ${username} ${password:+--password} ${password} \
       -O ${sourcedir}/${filename} "${image_location}"
 
       echo "Setting image_file to ${sourcedir}/${filename}"

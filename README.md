@@ -30,6 +30,7 @@ If the default SSH user is not the root user, the default user must have passwor
 |icp_priv_key        |               |No      |Private ssh key for ICP Boot master to connect to ICP Cluster. Only use when generate_key = false|
 | **Terraform installation process** |
 |hooks               | |No      |Hooks into different stages in the cluster setup process. See below for details|
+|on_hook_failure     |fail      |Behavior when hooks fail. Anything other than `fail` will `continue`|
 |install-verbosity   | |No      | Verbosity of the icp ansible installer. -v to -vvvv. See ansible documentation for verbosity information |
 | **Terraform to cluster ssh configuration**|
 |ssh_user            |root           |No      |Username for Terraform to ssh into the ICP cluster. This is typically the default user with for the relevant cloud vendor|
@@ -73,17 +74,28 @@ So for exmaple
 `myuser:SomeLongPassword@myprivateregistry.local/ibmcom/icp-inception:2.1.0.2`
 
 
-### Hooks
-It is possible to execute arbritrary commands between various phases of the cluster setup and installation process.
+### Remote Execution Hooks
+It is possible to execute arbitrary commands between various phases of the cluster setup and installation process.
 Currently, the following hooks are defined
 
-| Hook name                 | Where executed | When executed                                              |
+| Hook name          | Where executed | When executed                                              |
 |--------------------|----------------|------------------------------------------------------------|
 | cluster-preconfig  | all nodes      | Before any of the module scripts |
-| cluster-postconfig | all nodes      | After preprequisites are installed |
+| cluster-postconfig | all nodes      | After prerequisites are installed |
 | boot-preconfig     | boot master    | Before any module scripts on boot master |
 | preinstall         | boot master    | After configuration image load and configuration generation|
 | postinstall        | boot master    | After successful ICP installation                          |
+
+### Local Execution Hooks
+It is possible to execute arbitrary commands between various phases of the cluster setup and installation process.
+Currently, the following hooks are defined
+
+| Hook name          | When executed                                              |
+|--------------------|------------------------------------------------------------|
+| local-preinstall   | After configuration and preinstall remote hook |
+| local-postinstall  | After successful ICP installation |
+
+These hooks support the execution of a single command or a local script. While this is a local-exec [command](https://www.terraform.io/docs/provisioners/local-exec.html#command), passing additional interpreter/environment parameters are not supported and therefore everything will be treated as a BASH script.
 
 
 ### Host groups
@@ -270,8 +282,13 @@ To avoid breaking existing templates which depends on the module it is recommend
 - Deprecate ssh_key_file
 - Overhaul of scaler function
 
+#### 2.4.0
+- Add support for local hooks
+- Support specifying docker version when installing docker with apt (Ubuntu only)
+- Ensure /opt/ibm is present before copying cluster skeleton
+
 #### 2.3.7
-- Add retry logic to apt-get when installing prerequisites. Sometimes cloud-init or some other startup process can hold a lock on apt. 
+- Add retry logic to apt-get when installing prerequisites. Sometimes cloud-init or some other startup process can hold a lock on apt.
 
 #### 2.3.6
 - Retry ssh from boot to cluster nodes when generating /etc/hosts entries. Fixes issues when some cluster nodes are provisioned substantially slower.

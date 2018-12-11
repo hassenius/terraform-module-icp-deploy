@@ -12,8 +12,8 @@ resource "random_string" "generated_password" {
 }
 
 ## Cluster Pre-config hook
-resource "null_resource" "icp-cluster-preconfig-hook" {
-  count = "${contains(keys(var.hooks), "cluster-preconfig") ? var.cluster_size : 0}"
+resource "null_resource" "icp-cluster-preconfig-hook-stop-on-fail" {
+  count = "${var.on_hook_failure == "fail" ? var.cluster_size : 0}"
 
   connection {
       host          = "${element(local.icp-ips, count.index)}"
@@ -28,6 +28,26 @@ resource "null_resource" "icp-cluster-preconfig-hook" {
     inline = [
       "${var.hooks["cluster-preconfig"]}"
     ]
+    on_failure = "fail"
+  }
+}
+resource "null_resource" "icp-cluster-preconfig-hook-continue-on-fail" {
+  count = "${var.on_hook_failure != "fail" ? var.cluster_size : 0}"
+
+  connection {
+      host          = "${element(local.icp-ips, count.index)}"
+      user          = "${var.ssh_user}"
+      private_key   = "${local.ssh_key}"
+      agent         = "${var.ssh_agent}"
+      bastion_host  = "${var.bastion_host}"
+  }
+
+  # Run cluster-preconfig commands
+  provisioner "remote-exec" {
+    inline = [
+      "${var.hooks["cluster-preconfig"]}"
+    ]
+    on_failure = "continue"
   }
 }
 
@@ -74,9 +94,9 @@ resource "null_resource" "icp-cluster" {
 }
 
 ## Cluster postconfig hook
-resource "null_resource" "icp-cluster-postconfig-hook" {
+resource "null_resource" "icp-cluster-postconfig-hook-stop-on-fail" {
   depends_on = ["null_resource.icp-cluster"]
-  count = "${contains(keys(var.hooks), "cluster-postconfig") ? var.cluster_size : 0}"
+  count = "${var.on_hook_failure == "fail" ? var.cluster_size : 0}"
 
   connection {
       host          = "${element(local.icp-ips, count.index)}"
@@ -91,14 +111,35 @@ resource "null_resource" "icp-cluster-postconfig-hook" {
     inline = [
       "${var.hooks["cluster-postconfig"]}"
     ]
+    on_failure = "fail"
+  }
+}
+resource "null_resource" "icp-cluster-postconfig-hook-continue-on-fail" {
+  depends_on = ["null_resource.icp-cluster"]
+  count = "${var.on_hook_failure != "fail" ? var.cluster_size : 0}"
+
+  connection {
+      host          = "${element(local.icp-ips, count.index)}"
+      user          = "${var.ssh_user}"
+      private_key   = "${local.ssh_key}"
+      agent         = "${var.ssh_agent}"
+      bastion_host  = "${var.bastion_host}"
+  }
+
+  # Run cluster-postconfig commands
+  provisioner "remote-exec" {
+    inline = [
+      "${var.hooks["cluster-postconfig"]}"
+    ]
+    on_failure = "continue"
   }
 }
 
 
 # First hook for Boot node
-resource "null_resource" "icp-boot-preconfig" {
+resource "null_resource" "icp-boot-preconfig-stop-on-fail" {
   depends_on = ["null_resource.icp-cluster-postconfig-hook", "null_resource.icp-cluster"]
-  count = "${contains(keys(var.hooks), "boot-preconfig") ? 1 : 0}"
+  count = "${var.on_hook_failure == "fail" ? 1 : 0}"
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
@@ -114,6 +155,28 @@ resource "null_resource" "icp-boot-preconfig" {
     inline = [
       "${var.hooks["boot-preconfig"]}"
     ]
+    on_failure = "fail"
+  }
+}
+resource "null_resource" "icp-boot-preconfig-continue-on-fail" {
+  depends_on = ["null_resource.icp-cluster-postconfig-hook", "null_resource.icp-cluster"]
+  count = "${var.on_hook_failure != "fail" ? 1 : 0}"
+
+  # The first master is always the boot master where we run provisioning jobs from
+  connection {
+    host          = "${local.boot-node}"
+    user          = "${var.ssh_user}"
+    private_key   = "${local.ssh_key}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
+  }
+
+  # Run stage hook commands
+  provisioner "remote-exec" {
+    inline = [
+      "${var.hooks["boot-preconfig"]}"
+    ]
+    on_failure = "continue"
   }
 }
 
@@ -288,9 +351,9 @@ resource "null_resource" "icp-generate-hosts-files" {
 }
 
 # Boot node hook
-resource "null_resource" "icp-preinstall-hook" {
+resource "null_resource" "icp-preinstall-hook-stop-on-fail" {
   depends_on = ["null_resource.icp-generate-hosts-files"]
-  count = "${contains(keys(var.hooks), "preinstall") ? 1 : 0}"
+  count = "${var.on_hook_failure == "fail" ? 1 : 0}"
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
@@ -306,12 +369,54 @@ resource "null_resource" "icp-preinstall-hook" {
     inline = [
       "${var.hooks["preinstall"]}"
     ]
+    on_failure = "fail"
+  }
+}
+resource "null_resource" "icp-preinstall-hook-continue-on-fail" {
+  depends_on = ["null_resource.icp-generate-hosts-files"]
+  count = "${var.on_hook_failure != "fail" ? 1 : 0}"
+
+  # The first master is always the boot master where we run provisioning jobs from
+  connection {
+    host          = "${local.boot-node}"
+    user          = "${var.ssh_user}"
+    private_key   = "${local.ssh_key}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
+  }
+
+  # Run stage hook commands
+  provisioner "remote-exec" {
+    inline = [
+      "${var.hooks["preinstall"]}"
+    ]
+    on_failure = "continue"
+  }
+}
+
+# Local preinstall hook
+resource "null_resource" "local-preinstall-hook-stop-on-fail" {
+  depends_on = ["null_resource.icp-preinstall-hook"]
+  count = "${var.on_hook_failure == "fail" ? 1 : 0}"
+
+  provisioner "local-exec" {
+    command = "${var.hooks["local-preinstall"]}"
+    on_failure = "fail"
+  }
+}
+resource "null_resource" "local-preinstall-hook-continue-on-fail" {
+  depends_on = ["null_resource.icp-preinstall-hook"]
+  count = "${var.on_hook_failure != "fail" ? 1 : 0}"
+
+  provisioner "local-exec" {
+    command = "${var.hooks["local-preinstall"]}"
+    on_failure = "continue"
   }
 }
 
 # Start the installer
 resource "null_resource" "icp-install" {
-  depends_on = ["null_resource.icp-preinstall-hook", "null_resource.icp-generate-hosts-files"]
+  depends_on = ["null_resource.local-preinstall-hook", "null_resource.icp-generate-hosts-files"]
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
@@ -330,10 +435,30 @@ resource "null_resource" "icp-install" {
   }
 }
 
-# Hook for Boot node
-resource "null_resource" "icp-postinstall-hook" {
+# Local postinstall hook
+resource "null_resource" "local-postinstall-hook-stop-on-fail" {
   depends_on = ["null_resource.icp-install"]
-  count = "${contains(keys(var.hooks), "postinstall") ? 1 : 0}"
+  count = "${var.on_hook_failure == "fail" ? 1 : 0}"
+
+  provisioner "local-exec" {
+    command = "${var.hooks["local-postinstall"]}"
+    on_failure = "fail"
+  }
+}
+resource "null_resource" "local-postinstall-hook-continue-on-fail" {
+  depends_on = ["null_resource.icp-install"]
+  count = "${var.on_hook_failure != "fail" ? 1 : 0}"
+
+  provisioner "local-exec" {
+    command = "${var.hooks["local-postinstall"]}"
+    on_failure = "continue"
+  }
+}
+
+# Hook for Boot node
+resource "null_resource" "icp-postinstall-hook-stop-on-fail" {
+  depends_on = ["null_resource.icp-install"]
+  count = "${var.on_hook_failure == "fail" ? 1 : 0}"
 
   # The first master is always the boot master where we run provisioning jobs from
   connection {
@@ -349,6 +474,28 @@ resource "null_resource" "icp-postinstall-hook" {
     inline = [
       "${var.hooks["postinstall"]}"
     ]
+    on_failure = "fail"
+  }
+}
+resource "null_resource" "icp-postinstall-hook-continue-on-fail" {
+  depends_on = ["null_resource.icp-install"]
+  count = "${var.on_hook_failure != "fail" ? 1 : 0}"
+
+  # The first master is always the boot master where we run provisioning jobs from
+  connection {
+    host          = "${local.boot-node}"
+    user          = "${var.ssh_user}"
+    private_key   = "${local.ssh_key}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
+  }
+
+  # Run stage hook commands
+  provisioner "remote-exec" {
+    inline = [
+      "${var.hooks["postinstall"]}"
+    ]
+    on_failure = "continue"
   }
 }
 

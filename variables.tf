@@ -133,7 +133,20 @@ variable "config_strategy" {
 variable "hooks" {
   description = "Hooks into different stages in the cluster setup process"
   type        = "map"
-  default     = {}
+  default     = {
+    cluster-preconfig  = "echo -n"
+    cluster-postconfig = "echo -n"
+    boot-preconfig     = "echo -n"
+    preinstall         = "echo -n"
+    postinstall        = "echo -n"
+    local-preinstall   = "echo -n"
+    local-postinstall  = "echo -n"
+  }
+}
+
+variable "on_hook_failure" {
+  description = "Behavior when hooks fail. Anything other than `fail` will `continue`"
+  default     = "fail"
 }
 
 variable "icp-host-groups" {

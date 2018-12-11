@@ -273,9 +273,13 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 
 ### Versions and changes
-#### 2.3.7
-- Add retry logic to apt-get when installing prerequisites. Sometimes cloud-init or some other startup process can hold a lock on apt. 
+#### 2.4.0
+- Add support for local hooks
+- Support specifying docker version when installing docker with apt (Ubuntu only)
+- Ensure /opt/ibm is present before copying cluster skeleton
 
+#### 2.3.7
+- Add retry logic to apt-get when installing prerequisites. Sometimes cloud-init or some other startup process can hold a lock on apt.
 
 #### 2.3.6
 - Retry ssh from boot to cluster nodes when generating /etc/hosts entries. Fixes issues when some cluster nodes are provisioned substantially slower.

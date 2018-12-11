@@ -133,7 +133,20 @@ variable "config_strategy" {
 variable "hooks" {
   description = "Hooks into different stages in the cluster setup process"
   type        = "map"
-  default     = {}
+  default     = {
+    cluster-preconfig  = "echo -n"
+    cluster-postconfig = "echo -n"
+    boot-preconfig     = "echo -n"
+    preinstall         = "echo -n"
+    postinstall        = "echo -n"
+    local-preinstall   = "echo -n"
+    local-postinstall  = "echo -n"
+  }
+}
+
+variable "on_hook_failure" {
+  description = "Behavior when hooks fail. Anything other than `fail` will `continue`"
+  default     = "fail"
 }
 
 variable "icp-host-groups" {
@@ -150,6 +163,16 @@ variable "boot-node" {
 variable "install-verbosity" {
   description = "Verbosity of ansible installer output. -v to -vvvv where the maximum level includes connectivity information"
   default     = ""
+}
+
+variable "docker_image_name" {
+  description = "Name of docker image to install; only supported for Ubuntu"
+  default = "docker-ce"
+}
+
+variable "docker_version" {
+  description = "Version of docker image to install; only supported for Ubuntu"
+  default = "latest"
 }
 
 locals {

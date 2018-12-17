@@ -281,7 +281,7 @@ resource "null_resource" "icp-config" {
       "/tmp/icp-bootmaster-scripts/copy_cluster_skel.sh ${var.icp-version}",
       "sudo chown ${var.ssh_user} /opt/ibm/cluster/*",
       "chmod 600 /opt/ibm/cluster/ssh_key",
-      "python /tmp/icp-bootmaster-scripts/load-config.py ${var.config_strategy} ${random_string.generated_password}"
+      "python /tmp/icp-bootmaster-scripts/load-config.py ${var.config_strategy} ${random_string.generated_password.result}"
     ]
   }
 

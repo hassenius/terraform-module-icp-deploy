@@ -131,14 +131,21 @@ variable "config_strategy" {
 }
 
 variable "hooks" {
-  description = "Hooks into different stages in the cluster setup process"
+  description = "Hooks into different stages in the cluster setup process; each must be a list"
   type        = "map"
   default     = {
-    cluster-preconfig  = "echo -n"
-    cluster-postconfig = "echo -n"
-    boot-preconfig     = "echo -n"
-    preinstall         = "echo -n"
-    postinstall        = "echo -n"
+    cluster-preconfig  = "[echo -n]"
+    cluster-postconfig = "[echo -n]"
+    boot-preconfig     = "[echo -n]"
+    preinstall         = "[echo -n]"
+    postinstall        = "[echo -n]"
+  }
+}
+
+variable "local-hooks" {
+  description = "Local hooks into different stages in the cluster setup process; each must be a single command"
+  type        = "map"
+  default     = {
     local-preinstall   = "echo -n"
     local-postinstall  = "echo -n"
   }
@@ -182,4 +189,20 @@ locals {
   cluster_size  = "${length(concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management))}"
   ssh_key       = "${var.ssh_key_base64 == "" ? file(coalesce(var.ssh_key_file, "${path.module}/main.tf")) : base64decode(var.ssh_key_base64)}"
   boot-node     = "${element(compact(concat(list(var.boot-node),var.icp-master)), 0)}"
+
+  hooks-default = {
+    cluster-preconfig  = "[echo -n]"
+    cluster-postconfig = "[echo -n]"
+    boot-preconfig     = "[echo -n]"
+    preinstall         = "[echo -n]"
+    postinstall        = "[echo -n]"
+  }
+
+  local-hooks-default = {
+    local-preinstall   = "echo -n"
+    local-postinstall  = "echo -n"
+  }
+
+  hooks = "${merge(local.hooks-default, var.hooks)}"
+  local-hooks = "${merge(local.local-hooks-default, var.local-hooks)}"
 }

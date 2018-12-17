@@ -26,7 +26,7 @@ resource "null_resource" "icp-cluster-preconfig-hook-stop-on-fail" {
   # Run cluster-preconfig commands
   provisioner "remote-exec" {
     inline = [
-      "${var.hooks["cluster-preconfig"]}"
+      "${local.hooks["cluster-preconfig"]}"
     ]
     on_failure = "fail"
   }
@@ -45,7 +45,7 @@ resource "null_resource" "icp-cluster-preconfig-hook-continue-on-fail" {
   # Run cluster-preconfig commands
   provisioner "remote-exec" {
     inline = [
-      "${var.hooks["cluster-preconfig"]}"
+      "${local.hooks["cluster-preconfig"]}"
     ]
     on_failure = "continue"
   }
@@ -109,7 +109,7 @@ resource "null_resource" "icp-cluster-postconfig-hook-stop-on-fail" {
   # Run cluster-postconfig commands
   provisioner "remote-exec" {
     inline = [
-      "${var.hooks["cluster-postconfig"]}"
+      "${local.hooks["cluster-postconfig"]}"
     ]
     on_failure = "fail"
   }
@@ -129,7 +129,7 @@ resource "null_resource" "icp-cluster-postconfig-hook-continue-on-fail" {
   # Run cluster-postconfig commands
   provisioner "remote-exec" {
     inline = [
-      "${var.hooks["cluster-postconfig"]}"
+      "${local.hooks["cluster-postconfig"]}"
     ]
     on_failure = "continue"
   }
@@ -153,7 +153,7 @@ resource "null_resource" "icp-boot-preconfig-stop-on-fail" {
   # Run stage hook commands
   provisioner "remote-exec" {
     inline = [
-      "${var.hooks["boot-preconfig"]}"
+      "${local.hooks["boot-preconfig"]}"
     ]
     on_failure = "fail"
   }
@@ -174,7 +174,7 @@ resource "null_resource" "icp-boot-preconfig-continue-on-fail" {
   # Run stage hook commands
   provisioner "remote-exec" {
     inline = [
-      "${var.hooks["boot-preconfig"]}"
+      "${local.hooks["boot-preconfig"]}"
     ]
     on_failure = "continue"
   }
@@ -367,7 +367,7 @@ resource "null_resource" "icp-preinstall-hook-stop-on-fail" {
   # Run stage hook commands
   provisioner "remote-exec" {
     inline = [
-      "${var.hooks["preinstall"]}"
+      "${local.hooks["preinstall"]}"
     ]
     on_failure = "fail"
   }
@@ -388,7 +388,7 @@ resource "null_resource" "icp-preinstall-hook-continue-on-fail" {
   # Run stage hook commands
   provisioner "remote-exec" {
     inline = [
-      "${var.hooks["preinstall"]}"
+      "${local.hooks["preinstall"]}"
     ]
     on_failure = "continue"
   }
@@ -400,7 +400,7 @@ resource "null_resource" "local-preinstall-hook-stop-on-fail" {
   count = "${var.on_hook_failure == "fail" ? 1 : 0}"
 
   provisioner "local-exec" {
-    command = "${var.hooks["local-preinstall"]}"
+    command = "${local.local-hooks["local-preinstall"]}"
     on_failure = "fail"
   }
 }
@@ -409,7 +409,7 @@ resource "null_resource" "local-preinstall-hook-continue-on-fail" {
   count = "${var.on_hook_failure != "fail" ? 1 : 0}"
 
   provisioner "local-exec" {
-    command = "${var.hooks["local-preinstall"]}"
+    command = "${local.local-hooks["local-preinstall"]}"
     on_failure = "continue"
   }
 }
@@ -441,7 +441,7 @@ resource "null_resource" "local-postinstall-hook-stop-on-fail" {
   count = "${var.on_hook_failure == "fail" ? 1 : 0}"
 
   provisioner "local-exec" {
-    command = "${var.hooks["local-postinstall"]}"
+    command = "${local.local-hooks["local-postinstall"]}"
     on_failure = "fail"
   }
 }
@@ -450,7 +450,7 @@ resource "null_resource" "local-postinstall-hook-continue-on-fail" {
   count = "${var.on_hook_failure != "fail" ? 1 : 0}"
 
   provisioner "local-exec" {
-    command = "${var.hooks["local-postinstall"]}"
+    command = "${local.local-hooks["local-postinstall"]}"
     on_failure = "continue"
   }
 }
@@ -472,7 +472,7 @@ resource "null_resource" "icp-postinstall-hook-stop-on-fail" {
   # Run stage hook commands
   provisioner "remote-exec" {
     inline = [
-      "${var.hooks["postinstall"]}"
+      "${local.hooks["postinstall"]}"
     ]
     on_failure = "fail"
   }
@@ -493,7 +493,7 @@ resource "null_resource" "icp-postinstall-hook-continue-on-fail" {
   # Run stage hook commands
   provisioner "remote-exec" {
     inline = [
-      "${var.hooks["postinstall"]}"
+      "${local.hooks["postinstall"]}"
     ]
     on_failure = "continue"
   }

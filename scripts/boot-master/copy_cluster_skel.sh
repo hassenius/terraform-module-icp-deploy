@@ -1,6 +1,7 @@
 #!/bin/bash
 LOGFILE=/tmp/copyclusterskel.log
-exec 1>>$LOGFILE 2> >(tee -a $LOGFILE >&2)
+exec 3>&1
+exec > >(tee -a ${LOGFILE} >/dev/null) 2> >(tee -a ${LOGFILE} >&3)
 
 echo "Got first parameter $1"
 

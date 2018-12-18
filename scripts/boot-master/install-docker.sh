@@ -39,7 +39,7 @@ function rhel_docker_install {
   sudo systemctl start docker
 }
 
-if [ -z "${docker_version}" -eq "latest" ];
+if [ "${docker_version}" == "latest" ];
 then
   docker_version=""
 else

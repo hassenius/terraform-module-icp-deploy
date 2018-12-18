@@ -66,7 +66,13 @@ fi
 
 if [[ -s "$image_file" ]]
 then
-  tar xf ${image_file} -O | sudo docker load
+  echo "Loading image file ${image_file}. This can take a very long time" >&2
+  # If we have pv installed, we can use that for improved reporting
+  if which pv >>/dev/null; then
+    pv --interval 30 ${image_file} | tar zxf - -O | sudo docker load >&2
+  else
+    tar xf ${image_file} -O | sudo docker load
+  fi
 else
   # If we don't have an image locally we'll pull from docker registry
   if [[ -z $(docker images -q ${registry}${registry:+/}${org}/${repo}:${tag}) ]]; then

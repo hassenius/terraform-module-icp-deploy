@@ -34,7 +34,19 @@ function parse_icpversion() {
   then
     repo=$(echo ${1##*/} | cut -d: -f1)
     tag=$(echo ${1##*/} | cut -d/ -f2 | cut -d: -f2)
+  elif [[ "$1" == "" ]]
+  then
+    # We should autodetect the version if loaded from tarball
+    # For now we grab the first matching image in docker image list.
+    read -r repo tag <<<$(docker image list | awk -v pat=$DefaultRepo ' $1 ~ pat { print $1 " " $2 ; exit }')
+
+    # As a last resort we'll use the latest tag from docker hub
+    if [[ -z $tag ]]; then
+      repo=$DefaultRepo
+      tag="latest"
+    fi
   else
+    # The last supported approach is to just supply version number
     repo=$DefaultRepo
     tag=$1
   fi

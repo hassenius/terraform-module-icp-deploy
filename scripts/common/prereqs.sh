@@ -40,12 +40,12 @@ lvm2"
     sudo apt-get update
     while [ $? -ne 0 -a "$retries" -gt 0 ]; do
       retries=$((retries-1))
-      echo "Another process has acquired the apt-get update lock; waiting 10s" 1>&2
+      echo "Another process has acquired the apt-get update lock; waiting 10s" >&2
       sleep 10;
       sudo apt-get update
     done
     if [ $? -ne 0 -a "$retries" -eq 0 ] ; then
-      echo "Maximum number of retries (20) for apt-get update attempted; quitting" 1>&2
+      echo "Maximum number of retries (${retries}) for apt-get update attempted; quitting" >&2
       exit 1
     fi
 
@@ -53,12 +53,12 @@ lvm2"
     sudo apt-get install -y ${packages_to_install}
     while [ $? -ne 0 -a "$retries" -gt 0 ]; do
       retries=$((retries-1))
-      echo "Another process has acquired the apt-get install/upgrade lock; waiting 10s" 1>&2
+      echo "Another process has acquired the apt-get install/upgrade lock; waiting 10s" >&2
       sleep 10;
       sudo apt-get install -y ${packages_to_install}
     done
     if [ $? -ne 0 -a "$retries" -eq 0 ] ; then
-      echo "Maximum number of retries (20) for apt-get install attempted; quitting" 1>&2
+      echo "Maximum number of retries (20) for apt-get install attempted; quitting" >&2
       exit 1
     fi
   fi

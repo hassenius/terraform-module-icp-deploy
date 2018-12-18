@@ -145,7 +145,7 @@ elif [[ "${OSLEVEL}" == "redhat" ]]
     exit 0
 
 else
-  echo "Only Ubuntu supported for repository install for now..."
-  echo "Please install docker manually, or with ICP provided docker bundle"
+  echo "Only Ubuntu supported for repository install for now..." >&2
+  echo "Please install docker manually, or with ICP provided docker bundle" >&2
   exit 1
 fi

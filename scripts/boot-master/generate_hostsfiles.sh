@@ -136,7 +136,7 @@ if [[ $( stat -c%s /tmp/icp-host-groups.json ) -gt 2 ]]; then
 elif [[ -s ${WORKDIR}/masterlist.txt ]]; then
   read_from_groupfiles
 else
-  echo "Couldn't find any hosts"
+  echo "Couldn't find any hosts" >&2
   exit 1
 fi
 

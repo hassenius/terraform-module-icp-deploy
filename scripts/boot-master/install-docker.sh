@@ -6,7 +6,8 @@
 ##
 ###############################
 LOGFILE=/tmp/install-docker.log
-exec 1>>$LOGFILE 2> >(tee -a $LOGFILE >&2)
+exec 3>&1
+exec > >(tee -a ${LOGFILE} >/dev/null) 2> >(tee -a ${LOGFILE} >&3)
 
 echo "Got first parameter $1"
 package_location=$1
@@ -54,7 +55,7 @@ if docker --version &>> /dev/null
 then
   # Make sure the current user has permission to use docker
   /tmp/icp-common-scripts/docker-user.sh
-  echo "Docker already installed. Exiting"
+  echo "Docker already installed. Exiting" &>2
   exit 0
 fi
 

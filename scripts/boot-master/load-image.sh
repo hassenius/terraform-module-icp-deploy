@@ -1,21 +1,29 @@
 #!/bin/bash
 LOGFILE=/tmp/loadimage.log
-exec 1>>$LOGFILE 2> >(tee -a $LOGFILE >&2)
+exec 3>&1
+exec > >(tee -a ${LOGFILE} >/dev/null) 2> >(tee -a ${LOGFILE} >&3)
 
-echo "Got first parameter $1"
-echo "Second parameter $2"
-echo "Third parameter $3"
-image=$1
-image_location=$2
+while getopts ":v:l:" arg; do
+    case "${arg}" in
+      v)
+        image=${OPTARG}
+        ;;
+      l)
+        image_location=${OPTARG}
+        ;;
+    esac
+done
+
 sourcedir=/opt/ibm/cluster/images
 
 source /tmp/icp-bootmaster-scripts/functions.sh
 
-
-# Figure out the version
-# This will populate $org $repo and $tag
-parse_icpversion ${image}
-echo "registry=${registry:-not specified} org=$org repo=$repo tag=$tag"
+if [[ ! -z ${image} ]]; then
+  # Figure out the version
+  # This will populate $org $repo and $tag
+  parse_icpversion ${image}
+  echo "registry=${registry:-not specified} org=$org repo=$repo tag=$tag"
+fi
 
 if [[ "${image_location}" != "false" ]]
 then

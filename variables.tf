@@ -23,13 +23,8 @@ variable "icp-management" {
   default     = []
 }
 
-variable "parallel-image-pull" {
-  description = "Download and pull docker images on all nodes in parallel before starting ICP installation."
-  default     = false
-}
-
 variable "image_location" {
-  description = "NFS or HTTP location where image tarball can be accessed"
+  description = "Alternative to image_file, if image is accessible to the new vm over nfs or http"
   default     = "false"
 }
 
@@ -51,12 +46,6 @@ variable "ssh_user" {
 variable "ssh_key_base64" {
   description = "base64 encoded content of private ssh key"
   default     = ""
-}
-
-variable "ssh_key_file" {
-  description = "Location of private ssh key. i.e. ~/.ssh/id_rsa"
-  default     = ""
-
 }
 
 variable "ssh_agent" {
@@ -164,6 +153,6 @@ locals {
   host-group-ips = "${distinct(compact(concat(list(var.boot-node), keys(transpose(var.icp-host-groups)))))}"
   icp-ips       = "${distinct(concat(local.spec-icp-ips, local.host-group-ips))}"
   cluster_size  = "${length(concat(var.icp-master, var.icp-proxy, var.icp-worker, var.icp-management))}"
-  ssh_key       = "${var.ssh_key_base64 == "" ? file(coalesce(var.ssh_key_file, "${path.module}/main.tf")) : base64decode(var.ssh_key_base64)}"
+  ssh_key       = "${var.ssh_key_base64 == "" ? file(coalesce(var.ssh_key_file, "/dev/null")) : base64decode(var.ssh_key_base64)}"
   boot-node     = "${element(compact(concat(list(var.boot-node),var.icp-master)), 0)}"
 }

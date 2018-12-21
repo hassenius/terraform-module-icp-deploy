@@ -60,11 +60,9 @@ resource "null_resource" "icp-cluster" {
 resource "null_resource" "icp-docker" {
   depends_on = ["null_resource.icp-boot-preconfig-continue-on-fail", "null_resource.icp-boot-preconfig-stop-on-fail", "null_resource.icp-cluster"]
 
-  count = "${var.parallel-image-pull ? var.cluster_size : "1"}"
-
   # Boot node is always the first entry in the IP list, so if we're not pulling in parallel this will only happen on boot node
   connection {
-    host          = "${element(local.icp-ips, count.index)}"
+    host          = "${element(local.icp-ips, 0)}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"
@@ -97,11 +95,9 @@ resource "null_resource" "icp-docker" {
 resource "null_resource" "icp-image" {
   depends_on = ["null_resource.icp-docker"]
 
-  count = "${var.parallel-image-pull ? var.cluster_size : "1"}"
-
-  # Boot node is always the first entry in the IP list, so if we're not pulling in parallel this will only happen on boot node
+  # Boot node is always the first entry in the IP list
   connection {
-    host          = "${element(local.icp-ips, count.index)}"
+    host          = "${element(local.icp-ips, 0)}"
     user          = "${var.ssh_user}"
     private_key   = "${local.ssh_key}"
     agent         = "${var.ssh_agent}"

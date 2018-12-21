@@ -9,12 +9,22 @@ LOGFILE=/tmp/install-docker.log
 exec 3>&1
 exec > >(tee -a ${LOGFILE} >/dev/null) 2> >(tee -a ${LOGFILE} >&3)
 
-echo "Got first parameter $1"
-package_location=$1
-echo "Got second parameter $2"
-docker_image=$2
-echo "Got second parameter $3"
-docker_version=$3
+echo "Script started with inputs $@"
+
+while getopts ":p:i:v:" arg; do
+    case "${arg}" in
+      p)
+        package_location=${OPTARG}
+        ;;
+      i)
+        docker_image=${OPTARG}
+        ;;
+      v)
+        docker_version=${OPTARG}
+        ;;
+    esac
+done
+
 sourcedir=/tmp/icp-docker
 
 function rhel_docker_install {

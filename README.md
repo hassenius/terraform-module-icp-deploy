@@ -44,7 +44,6 @@ If the default SSH user is not the root user, the default user must have passwor
 |docker_image_name   |docker-ce      |No      |Name of docker image to install; only supported for Ubuntu|
 |docker_version      |latest         |No      |Version of docker image to install; only supported for Ubuntu|
 |image_location      |False          |No      |Location of image file. Start with nfs: or http: to indicate protocol to download with|
-|parallel-image-pull|False          |No      |Download and pull docker images on all nodes in parallel before starting ICP installation. Can speed up installation time|
 
 ## Outputs
 
@@ -215,7 +214,6 @@ module "icpprovision" {
 
     icp-version    = "2.1.0.1-ee"
     image_location = "nfs:fsf-lon0601b-fz.adn.networklayer.com:/IBM02S6275/data01/ibm-cloud-private-x86_64-2.1.0.1.tar.gz"
-    parallel-pull = True
 
     cluster_size  = "${var.master["nodes"] + var.worker["nodes"] + var.proxy["nodes"]}"
 
@@ -272,7 +270,8 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 ### Versions and changes
 #### 3.0.0
-- Fix typo in parallel-image-load variable
+- Retire parallel image pull
+- Retire unused variables (enterprise-edition, image_file, ssh_key, ssh_key_file)
 - Default to generate strong default admin password if no password is specified
 - Depcrecate image_file
 - Deprecate ssh_key_file

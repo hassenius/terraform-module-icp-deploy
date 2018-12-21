@@ -42,12 +42,33 @@ function rhel_docker_install {
   sudo yum-config-manager --add-repo  https://download.docker.com/linux/centos/docker-ce.repo
   sudo yum install -y docker-ce
 
-  # Make sure our user is added to the docker group if needed
-  /tmp/icp-common-scripts/docker-user.sh
-
   # Start Docker locally on the host
   sudo systemctl enable docker
   sudo systemctl start docker
+}
+
+function ubuntu_docker_install {
+  # Process for Ubuntu VMs
+  echo "Installing ${docker_version:-latest} docker from docker repository" >&2
+  sudo apt-get -q update
+  # Make sure preprequisites are installed
+  sudo apt-get -y -q install \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    software-properties-common
+
+  # Add docker gpg key
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+  # Right now hard code adding x86 repo
+  sudo add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable"
+
+  sudo apt-get -q update
+  sudo apt-get -y -q install ${docker_image}${docker_version}
 }
 
 if [ "${docker_version}" == "latest" ];
@@ -56,9 +77,6 @@ then
 else
   docker_version="=${docker_version}"
 fi
-
-# TODO: Deal with installation from apt repository for linux
-# Figure out if we're asked to install at all
 
 # Nothing to do here if we have docker already
 if docker --version &>> /dev/null
@@ -123,28 +141,7 @@ echo "Operating System is $OSLEVEL"
 
 if [[ "${OSLEVEL}" == "ubuntu" ]]
   then
-    # Process for Ubuntu VMs
-    echo "Installing ${docker_version:-latest} docker from docker repository" >&2
-    sudo apt-get -q update
-    # Make sure preprequisites are installed
-    sudo apt-get -y -q install \
-      apt-transport-https \
-      ca-certificates \
-      curl \
-      software-properties-common
-
-    # Add docker gpg key
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-
-    # Right now hard code adding x86 repo
-    sudo add-apt-repository \
-     "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-     $(lsb_release -cs) \
-     stable"
-
-    sudo apt-get -q update
-
-    sudo apt-get -y -q install ${docker_image}${docker_version}
+    ubuntu_docker_install
 
     # Make sure our user is added to the docker group if needed
     /tmp/icp-common-scripts/docker-user.sh
@@ -153,6 +150,9 @@ if [[ "${OSLEVEL}" == "ubuntu" ]]
 elif [[ "${OSLEVEL}" == "redhat" ]]
   then
     rhel_docker_install
+
+    # Make sure our user is added to the docker group if needed
+    /tmp/icp-common-scripts/docker-user.sh
     exit 0
 
 else

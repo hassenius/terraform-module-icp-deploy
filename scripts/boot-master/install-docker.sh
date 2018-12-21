@@ -114,7 +114,7 @@ echo "Operating System is $OSLEVEL"
 if [[ "${OSLEVEL}" == "ubuntu" ]]
   then
     # Process for Ubuntu VMs
-    echo "Installing latest docker from docker repository"
+    echo "Installing ${docker_version:-latest} docker from docker repository" >&2
     sudo apt-get -q update
     # Make sure preprequisites are installed
     sudo apt-get -y -q install \

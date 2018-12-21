@@ -40,7 +40,7 @@ function rhel_docker_install {
 
   # Register Docker Community Edition repo for CentOS and RedHat
   sudo yum-config-manager --add-repo  https://download.docker.com/linux/centos/docker-ce.repo
-  sudo yum install -y docker-ce
+  sudo yum install -y ${docker_image}${docker_version}
 
   # Start Docker locally on the host
   sudo systemctl enable docker
@@ -70,13 +70,6 @@ function ubuntu_docker_install {
   sudo apt-get -q update
   sudo apt-get -y -q install ${docker_image}${docker_version}
 }
-
-if [ "${docker_version}" == "latest" ];
-then
-  docker_version=""
-else
-  docker_version="=${docker_version}"
-fi
 
 # Nothing to do here if we have docker already
 if docker --version &>> /dev/null
@@ -141,6 +134,13 @@ echo "Operating System is $OSLEVEL"
 
 if [[ "${OSLEVEL}" == "ubuntu" ]]
   then
+    if [ "${docker_version}" == "latest" ];
+    then
+      docker_version=""
+    else
+      docker_version="=${docker_version}*"
+    fi
+
     ubuntu_docker_install
 
     # Make sure our user is added to the docker group if needed
@@ -149,6 +149,12 @@ if [[ "${OSLEVEL}" == "ubuntu" ]]
 
 elif [[ "${OSLEVEL}" == "redhat" ]]
   then
+    if [ "${docker_version}" == "latest" ]
+    then
+      docker_version=""
+    else
+      docker_version="-${docker_version}*"
+    fi
     rhel_docker_install
 
     # Make sure our user is added to the docker group if needed

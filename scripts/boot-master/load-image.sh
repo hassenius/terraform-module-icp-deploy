@@ -109,7 +109,7 @@ then
   if which pv >>/dev/null; then
     pv --interval 30 ${image_file} | tar zxf - -O | sudo docker load >&2
   else
-    tar xf ${image_file} -O | sudo docker load
+    tar xf ${image_file} -O | sudo docker load >&2
   fi
 else
   # If we don't have an image locally we'll pull from docker registry

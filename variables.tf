@@ -24,8 +24,24 @@ variable "icp-management" {
 }
 
 variable "image_location" {
-  description = "Alternative to image_file, if image is accessible to the new vm over nfs or http"
-  default     = "false"
+  description = "NFS or HTTP location where image tarball can be accessed"
+  default     = ""
+}
+
+variable "image_locations" {
+  type        = "list"
+  description = "List of HTTP locations where image tarballs can be accessed. Typically used in multi-arch deployment"
+  default     = []
+}
+
+variable "image_location_user" {
+  description = "Username if authentication required for image_location"
+  default     = ""
+}
+
+variable "image_location_pass" {
+  description = "Pass if authentication required for image_location"
+  default     = ""
 }
 
 variable "docker_package_location" {

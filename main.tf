@@ -92,6 +92,17 @@ resource "null_resource" "icp-docker" {
   }
 }
 
+# To make image-load more readable we'll do some interpolations here
+locals {
+  load_image_options = "${join(" -", compact(list(
+    "-i ${var.icp-version}",
+    var.image_location == "" ? "" : "l ${var.image_location}",
+    length(var.image_locations) == 0 ? "" : "l ${join(" -l ", var.image_locations )}",
+    var.image_location_user == "" ? "" : "u ${var.image_location_user}",
+    var.image_location_pass == "" ? "" : "p ${var.image_location_pass}"
+  )))}"
+}
+
 resource "null_resource" "icp-image" {
   depends_on = ["null_resource.icp-docker"]
 
@@ -107,7 +118,7 @@ resource "null_resource" "icp-image" {
   provisioner "remote-exec" {
     inline = [
       "echo \"Loading image ${var.icp-version} ${var.image_location}\"",
-      "/tmp/icp-bootmaster-scripts/load-image.sh ${var.icp-version != "" ? "-v ${var.icp-version}" : ""} ${var.image_location != "" ? "-l ${var.image_location}" : ""}"
+      "/tmp/icp-bootmaster-scripts/load-image.sh ${local.load_image_options}"
     ]
   }
 }

@@ -41,6 +41,14 @@ function rhel_docker_install {
   # Register Docker Community Edition repo for CentOS and RedHat
   sudo yum-config-manager --add-repo  https://download.docker.com/linux/centos/docker-ce.repo
   sudo yum install -y ${docker_image}${docker_version}
+  if [[ $? -gt 0 ]]; then
+    if which tail &>> /dev/null; then
+      tail -n 5 $LOGFILE >&2
+    fi
+
+    echo "Error installing ${docker_image}${docker_version}" >&2
+    exit 1
+  fi
 
   # Start Docker locally on the host
   sudo systemctl enable docker
@@ -69,6 +77,14 @@ function ubuntu_docker_install {
 
   sudo apt-get -q update
   sudo apt-get -y -q install ${docker_image}${docker_version}
+  if [[ $? -gt 0 ]]; then
+    if which tail &>> /dev/null; then
+      tail -n 5 $LOGFILE >&2
+    fi
+
+    echo "Error installing ${docker_image}${docker_version}" >&2
+    exit 1
+  fi
 }
 
 # Nothing to do here if we have docker already
@@ -76,7 +92,7 @@ if docker --version &>> /dev/null
 then
   # Make sure the current user has permission to use docker
   /tmp/icp-common-scripts/docker-user.sh
-  echo "Docker already installed. Exiting" &>2
+  echo "Docker already installed. Exiting" >&2
   exit 0
 fi
 

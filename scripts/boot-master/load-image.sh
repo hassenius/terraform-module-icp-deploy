@@ -75,7 +75,8 @@ for image_location in ${locations[@]} ; do
 
     # Download the file using auth if provided
     echo "Downloading ${image_location}" >&2
-    wget --continue ${username:+--user} ${username} ${password:+--password} ${password} \
+    echo "This can take a very long time" >&2
+    wget -nv --continue ${username:+--user} ${username} ${password:+--password} ${password} \
      -O ${sourcedir}/${filename} "${image_location}"
 
     if [[ $? -gt 0 ]]; then

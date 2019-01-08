@@ -16,7 +16,7 @@ output "install_complete" {
 }
 
 output "icp_version" {
-  value = "${var.icp-version}"
+  value = "${var.icp-inception}"
 }
 
 output "cluster_ips" {

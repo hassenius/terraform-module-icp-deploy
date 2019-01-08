@@ -7,7 +7,7 @@ resource "tls_private_key" "icpkey" {
 # Generate a random string for password if required
 resource "random_string" "generated_password" {
   length            = "16"
-  override_special  = "_-!@$%^&*()"
+  special           = "false"
 }
 
 ## cluster-preconfig hooks are run before icp-cluster if defined

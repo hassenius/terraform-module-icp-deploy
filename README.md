@@ -12,7 +12,7 @@ If the default SSH user is not the root user, the default user must have passwor
 | Variable           | Default       |Required| Description                            |
 |--------------------|---------------|--------|----------------------------------------|
 | **Cluster settings** |
-|icp-version         |2.1.0.2        |No      |Version of ICP to provision. See below for details on using private registry|
+|icp-inception         |               |No*      |Version of ICP to provision. Not required when See below for details on using private registry|
 |icp-master          |               |No*     |IP address of ICP Masters. Required if you don't use icp-host-groups |
 |icp-worker          |               |No*     |IP addresses of ICP Worker nodes. Required if you don't use icp-host-groups       |
 |icp-proxy           |               |No*     |IP addresses of ICP Proxy nodes. Required if you don't use icp-host-groups        |
@@ -30,20 +30,20 @@ If the default SSH user is not the root user, the default user must have passwor
 |icp_priv_key        |               |No      |Private ssh key for ICP Boot master to connect to ICP Cluster. Only use when generate_key = false|
 | **Terraform installation process** |
 |hooks               | |No      |Hooks into different stages in the cluster setup process. See below for details|
-|on_hook_failure     |fail      |Behavior when hooks fail. Anything other than `fail` will `continue`|
+|on_hook_failure     |fail  |    |Behavior when hooks fail. Anything other than `fail` will `continue`|
 |install-verbosity   | |No      | Verbosity of the icp ansible installer. -v to -vvvv. See ansible documentation for verbosity information |
 | **Terraform to cluster ssh configuration**|
 |ssh_user            |root           |No      |Username for Terraform to ssh into the ICP cluster. This is typically the default user with for the relevant cloud vendor|
 |ssh_key_base64      |               |No      |base64 encoded content of private ssh key|
-|ssh_key_file        |               |No      |Location of private ssh key. i.e. ~/.ssh/id_rsa|
 |ssh_agent           |True           |No      |Enable or disable SSH Agent. Can correct some connectivity issues. Default: true (enabled)|
-|ssh_key             |~/.ssh/id_rsa  |No      |Private key corresponding to the public key that the cloud servers are provisioned with. DEPRECATED. Use ssh_key_file or ssh_key_base64|
 |bastion_host        |               |No      |Specify hostname or IP to connect to nodes through a SSH bastion host. Assumes same SSH key and username as cluster nodes|
 | **Docker and ICP Enterprise Edition Image configuration** |
 |docker_package_location|               |No      |http or nfs location of docker installer which ships with ICP. Typically used for RHEL which does not support docker-ce|
-|docker_image_name   |docker-ce      |No      |Name of docker image to install; only supported for Ubuntu|
-|docker_version      |latest         |No      |Version of docker image to install; only supported for Ubuntu|
-|image_location      |False          |No      |Location of image file. Start with nfs: or http: to indicate protocol to download with|
+|docker_image_name   |docker-ce      |No      |Name of docker image to install when installing from Ubuntu or Centos repository |
+|docker_version      |latest         |No      |Version of docker image to install from Ubuntu or Centos repository. i.e. `18.06.1` `latest` install latest version. |
+|image_location      |             |No      |Location of image file. Start with `nfs:` or `http` to indicate protocol to download with. See example below |
+|image_location_user |  | No |Username if authentication required for image_location |
+|image_location_pass |  | No | Password if authentication required for image_location |
 
 ## Outputs
 
@@ -59,7 +59,7 @@ If the default SSH user is not the root user, the default user must have passwor
     * List of IPs of the cluster
 
 ### ICP Version specifications
-The `icp-version` field supports the format `org`/`repo`:`version`. `ibmcom` is the default organisation and `icp-inception` is the default repo, so if you're installing for example version `2.1.0.2` from Docker Hub it's sufficient to specify `2.1.0.2` as the version number.
+The `icp-inception` field supports the format `org`/`repo`:`version`. `ibmcom` is the default organisation and `icp-inception` is the default repo, so if you're installing for example version `2.1.0.2` from Docker Hub it's sufficient to specify `2.1.0.2` as the version number.
 
 It is also supported to install from private docker registries.
 In this case the format is:
@@ -105,13 +105,13 @@ To support this an input map called `icp-host-groups` were introduced, and this 
 
 ```hcl
 module "icpprovision" {
-    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.3.1"
+    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=3.0.0"
 
     icp-master  = ["${softlayer_virtual_guest.icpmaster.ipv4_address}"]
     icp-worker  = ["${softlayer_virtual_guest.icpworker.*.ipv4_address}"]
     icp-proxy   = ["${softlayer_virtual_guest.icpproxy.*.ipv4_address}"]
 
-    icp-version = "2.1.0.1"
+    icp-inception = "3.1.2"
 
     cluster_size  = "${var.master["nodes"] + var.worker["nodes"] + var.proxy["nodes"]}"
 
@@ -123,8 +123,9 @@ module "icpprovision" {
 
     generate_key = true
 
-    ssh_user     = "ubuntu"
-    ssh_key_file = "~/.ssh/id_rsa"
+    ssh_user       = "ubuntu"
+    ssh_key_base64 = "${base64encode(file("~/.ssh/id_rsa"))}"
+
     hooks = {
       "cluster-preconfig" = [
         "echo This will run on all nodes",
@@ -145,7 +146,7 @@ module "icpprovision" {
 
 ```hcl
 module "icpprovision" {
-    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.3.1"
+    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=3.0.0"
 
     # We will define master, management, worker, proxy and va (Vulnerability Assistant) as well as a custom db2 group
     icp-host-groups = {
@@ -162,7 +163,7 @@ module "icpprovision" {
     # We will use the first master node as boot node to run the ansible installer from
     boot-node   = "${openstack_compute_instance_v2.icpmaster.0.access_ip_v4}"
 
-    icp-version = "2.1.0.2"
+    icp-inception = "3.1.2"
 
     cluster_size  = "${var.master["nodes"] + var.worker["nodes"] + var.proxy["nodes"]}"
 
@@ -178,13 +179,13 @@ module "icpprovision" {
 
 ```hcl
 module "icpprovision" {
-    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.0.0"
+    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=3.0.0"
 
     icp-master  = ["${softlayer_virtual_guest.icpmaster.ipv4_address}"]
     icp-worker  = ["${softlayer_virtual_guest.icpworker.*.ipv4_address}"]
     icp-proxy   = ["${softlayer_virtual_guest.icpproxy.*.ipv4_address}"]
 
-    icp-version = "2.1.0.1"
+    icp-inception = "3.1.2"
 
     cluster_size  = "${var.master["nodes"] + var.worker["nodes"] + var.proxy["nodes"]}"
 
@@ -196,23 +197,24 @@ module "icpprovision" {
 
     generate_key = true
 
-    ssh_user     = "ubuntu"
-    ssh_key_file = "~/.ssh/id_rsa"
+    ssh_user       = "ubuntu"
+    ssh_key_base64 = "${base64encode(file("~/.ssh/id_rsa"))}"
 
 }
 ```
 
 #### Enterprise Edition
 
+From NFS location
+
 ```hcl
 module "icpprovision" {
-    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.0.0"
+    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=3.0.0"
 
     icp-master = ["${softlayer_virtual_guest.icpmaster.ipv4_address}"]
     icp-worker = ["${softlayer_virtual_guest.icpworker.*.ipv4_address}"]
     icp-proxy  = ["${softlayer_virtual_guest.icpproxy.*.ipv4_address}"]
 
-    icp-version    = "2.1.0.1-ee"
     image_location = "nfs:fsf-lon0601b-fz.adn.networklayer.com:/IBM02S6275/data01/ibm-cloud-private-x86_64-2.1.0.1.tar.gz"
 
     cluster_size  = "${var.master["nodes"] + var.worker["nodes"] + var.proxy["nodes"]}"
@@ -225,8 +227,37 @@ module "icpprovision" {
 
     generate_key = true
 
-    ssh_user     = "ubuntu"
-    ssh_key_file = "~/.ssh/id_rsa"
+    ssh_user       = "ubuntu"
+    ssh_key_base64 = "${base64encode(file("~/.ssh/id_rsa"))}"
+
+}
+```
+
+From HTTP location
+
+```hcl
+module "icpprovision" {
+    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=3.0.0"
+
+    icp-master = ["${softlayer_virtual_guest.icpmaster.ipv4_address}"]
+    icp-worker = ["${softlayer_virtual_guest.icpworker.*.ipv4_address}"]
+    icp-proxy  = ["${softlayer_virtual_guest.icpproxy.*.ipv4_address}"]
+
+    image_location = "https://myserver.host/myfiles/ibm-cloud-private-x86_64-2.1.0.1.tar.gz"
+
+
+    cluster_size  = "${var.master["nodes"] + var.worker["nodes"] + var.proxy["nodes"]}"
+
+    icp_configuration = {
+      "network_cidr"              = "192.168.0.0/16"
+      "service_cluster_ip_range"  = "172.16.0.1/24"
+      "default_admin_password"    = "My0wnPassw0rd"
+    }
+
+    generate_key = true
+
+    ssh_user       = "ubuntu"
+    ssh_key_base64 = "${base64encode(file("~/.ssh/id_rsa"))}"
 
 }
 ```
@@ -273,10 +304,14 @@ To avoid breaking existing templates which depends on the module it is recommend
 - Retire parallel image pull
 - Retire unused variables (enterprise-edition, image_file, ssh_key, ssh_key_file)
 - Default to generate strong default admin password if no password is specified
-- Depcrecate image_file
-- Deprecate ssh_key_file
+- Detect inception image when installing from offline tarball
+- Rename `icp-version` variable to more descriptive `icp-inception`
 - Overhaul of scaler function
 - Add support for automatic installation of docker on RHEL and Centos
+- Add support for downloading multi-arch images
+- Fix wget output spamming during wget image download
+- Include BATS test for testing scripts locally
+- Rewrite image-load to take username and password separately when downloading from HTTP source
 
 #### 2.4.0
 - Add support for local hooks

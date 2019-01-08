@@ -51,3 +51,10 @@ function parse_icpversion() {
     tag=$1
   fi
 }
+
+function get_inception_image() {
+  # In cases where inception image has not been specified
+  # we may look for inception image locally
+  image=$(docker image list | grep -m 1 inception | awk '{ print $1 ":" $2 }')
+  echo $image
+}

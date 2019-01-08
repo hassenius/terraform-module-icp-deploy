@@ -35,4 +35,4 @@ sudo chown $(whoami):$(whoami) -R ${target}
 docker run -e LICENSE=accept -v ${target}:/data ${registry}${registry:+/}${org}/${repo}:${tag} cp -r cluster /data
 
 # Take a backup of original config file, to keep a record of original settings and comments
-cp ${target}/cluster/config.yaml /opt/ibm/cluster/config.yaml-original
+cp ${target}/cluster/config.yaml ${target}/cluster/config.yaml-original

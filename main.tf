@@ -49,7 +49,7 @@ resource "null_resource" "icp-cluster" {
       "echo '${var.generate_key ? tls_private_key.icpkey.public_key_openssh : var.icp_pub_key}' | tee -a ~/.ssh/authorized_keys",
       "chmod a+x /tmp/icp-common-scripts/*",
       "/tmp/icp-common-scripts/prereqs.sh",
-      "/tmp/icp-common-scripts/version-specific.sh ${var.icp-version}",
+      "/tmp/icp-common-scripts/version-specific.sh ${var.icp-inception}",
       "/tmp/icp-common-scripts/docker-user.sh"
     ]
   }
@@ -95,7 +95,7 @@ resource "null_resource" "icp-docker" {
 # To make image-load more readable we'll do some interpolations here
 locals {
   load_image_options = "${join(" -", list(""), compact(list(
-    var.icp-version         == "" ? "" : "i ${var.icp-version}",
+    var.icp-inception         == "" ? "" : "i ${var.icp-inception}",
     var.image_location_user == "" ? "" : "u ${var.image_location_user}",
     var.image_location_pass == "" ? "" : "p ${var.image_location_pass}",
     var.image_location      == "" ? "" : "l ${var.image_location}",
@@ -117,7 +117,7 @@ resource "null_resource" "icp-image" {
 
   provisioner "remote-exec" {
     inline = [
-      "echo \"Loading image ${var.icp-version} ${var.image_location}\"",
+      "echo \"Loading image ${var.icp-inception} ${var.image_location}\"",
       "/tmp/icp-bootmaster-scripts/load-image.sh ${local.load_image_options}"
     ]
   }
@@ -167,7 +167,7 @@ resource "null_resource" "icp-config" {
 
   provisioner "remote-exec" {
     inline = [
-      "/tmp/icp-bootmaster-scripts/copy_cluster_skel.sh ${var.icp-version == "" ? "" : " -v ${var.icp-version}"}",
+      "/tmp/icp-bootmaster-scripts/copy_cluster_skel.sh ${var.icp-inception == "" ? "" : " -v ${var.icp-inception}"}",
       "sudo chown ${var.ssh_user} /opt/ibm/cluster/*",
       "chmod 600 /opt/ibm/cluster/ssh_key",
       "python /tmp/icp-bootmaster-scripts/load-config.py ${var.config_strategy} ${random_string.generated_password.result}"
@@ -226,7 +226,7 @@ resource "null_resource" "icp-generate-hosts-files" {
 # To make install options more readable we'll do some interpolations here
 locals {
   install_options = "${join(" -", list(""), compact(list(
-    var.icp-version       == "" ? "" : "v ${var.icp-version}",
+    var.icp-inception       == "" ? "" : "v ${var.icp-inception}",
     var.install-verbosity == "" ? "" : "v ${var.install-verbosity}"
   )))}"
 }
@@ -292,7 +292,7 @@ resource "null_resource" "icp-worker-scaler" {
   provisioner "remote-exec" {
     inline = [
       "chmod a+x /tmp/icp-bootmaster-scripts/scaleworkers.sh",
-      "/tmp/icp-bootmaster-scripts/scaleworkers.sh ${var.icp-version}"
+      "/tmp/icp-bootmaster-scripts/scaleworkers.sh ${var.icp-inception}"
     ]
   }
 

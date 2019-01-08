@@ -49,8 +49,8 @@ variable "docker_package_location" {
   default     = ""
 }
 
-variable  "icp-version" {
-  description = "Version of ICP to provision. For example 1.2.0, 1.2.0-ee, 2.1.0-beta1"
+variable  "icp-inception" {
+  description = "Version of ICP to provision. For example 3.1.2 or myuser:mypass@registry/ibmcom/icp-inception:3.1.2-ee"
   default = ""
 }
 

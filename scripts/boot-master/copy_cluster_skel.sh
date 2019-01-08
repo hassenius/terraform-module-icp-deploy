@@ -1,22 +1,38 @@
 #!/bin/bash
 LOGFILE=/tmp/copyclusterskel.log
+target="/opt/ibm"
 exec 3>&1
 exec > >(tee -a ${LOGFILE} >/dev/null) 2> >(tee -a ${LOGFILE} >&3)
 
-echo "Got first parameter $1"
+echo "Script started with inputs $@"
 
+while getopts ":v:t:" arg; do
+    case "${arg}" in
+      v)
+        icp_version=${OPTARG}
+        ;;
+      t)
+        target=${OPTARG}
+        ;;
+    esac
+done
 
 source /tmp/icp-bootmaster-scripts/functions.sh
 
+# If loaded from tarball, icp version may not be specified in terraform
+if [[ -z "${icp_version}" ]]; then
+  icp_version=$(get_inception_image)
+fi
+
 # Figure out the version
 # This will populate $org $repo and $tag
-parse_icpversion ${1}
+parse_icpversion ${icp_version}
 echo "registry=${registry:-not specified} org=$org repo=$repo tag=$tag"
 
 # Ensure that /opt/ibm is present and copy default data directory
-sudo mkdir -p /opt/ibm
-sudo chown $(whoami):$(whoami) -R /opt/ibm
-docker run -e LICENSE=accept -v /opt/ibm:/data ${registry}${registry:+/}${org}/${repo}:${tag} cp -r cluster /data
+sudo mkdir -p ${target}
+sudo chown $(whoami):$(whoami) -R ${target}
+docker run -e LICENSE=accept -v ${target}:/data ${registry}${registry:+/}${org}/${repo}:${tag} cp -r cluster /data
 
 # Take a backup of original config file, to keep a record of original settings and comments
-cp /opt/ibm/cluster/config.yaml /opt/ibm/cluster/config.yaml-original
+cp ${target}/cluster/config.yaml /opt/ibm/cluster/config.yaml-original

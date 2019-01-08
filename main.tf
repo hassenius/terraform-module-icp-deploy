@@ -94,12 +94,12 @@ resource "null_resource" "icp-docker" {
 
 # To make image-load more readable we'll do some interpolations here
 locals {
-  load_image_options = "${join(" -", compact(list(
-    "-i ${var.icp-version}",
-    var.image_location == "" ? "" : "l ${var.image_location}",
-    length(var.image_locations) == 0 ? "" : "l ${join(" -l ", var.image_locations )}",
+  load_image_options = "${join(" -", list(""), compact(list(
+    var.icp-version         == "" ? "" : "i ${var.icp-version}",
     var.image_location_user == "" ? "" : "u ${var.image_location_user}",
-    var.image_location_pass == "" ? "" : "p ${var.image_location_pass}"
+    var.image_location_pass == "" ? "" : "p ${var.image_location_pass}",
+    var.image_location      == "" ? "" : "l ${var.image_location}",
+    length(var.image_locations) == 0 ? "" : "l ${join(" -l ", var.image_locations )}"
   )))}"
 }
 
@@ -152,8 +152,6 @@ resource "null_resource" "icp-boot" {
   }
 }
 
-
-
 # Generate all necessary configuration files, load image files, etc
 resource "null_resource" "icp-config" {
   depends_on = ["null_resource.icp-boot"]
@@ -169,7 +167,7 @@ resource "null_resource" "icp-config" {
 
   provisioner "remote-exec" {
     inline = [
-      "/tmp/icp-bootmaster-scripts/copy_cluster_skel.sh ${var.icp-version}",
+      "/tmp/icp-bootmaster-scripts/copy_cluster_skel.sh ${var.icp-version == "" ? "" : " -v ${var.icp-version}"}",
       "sudo chown ${var.ssh_user} /opt/ibm/cluster/*",
       "chmod 600 /opt/ibm/cluster/ssh_key",
       "python /tmp/icp-bootmaster-scripts/load-config.py ${var.config_strategy} ${random_string.generated_password.result}"
@@ -225,6 +223,13 @@ resource "null_resource" "icp-generate-hosts-files" {
 
 # Boot node and local hooks are run before install if defined
 
+# To make install options more readable we'll do some interpolations here
+locals {
+  install_options = "${join(" -", list(""), compact(list(
+    var.icp-version       == "" ? "" : "v ${var.icp-version}",
+    var.install-verbosity == "" ? "" : "v ${var.install-verbosity}"
+  )))}"
+}
 # Start the installer
 resource "null_resource" "icp-install" {
   depends_on = ["null_resource.local-preinstall-hook-continue-on-fail", "null_resource.local-preinstall-hook-stop-on-fail", "null_resource.icp-generate-hosts-files"]
@@ -241,7 +246,7 @@ resource "null_resource" "icp-install" {
 
   provisioner "remote-exec" {
     inline = [
-      "/tmp/icp-bootmaster-scripts/start_install.sh ${var.icp-version} ${var.install-verbosity}"
+      "/tmp/icp-bootmaster-scripts/start_install.sh ${local.install_options}"
     ]
   }
 }

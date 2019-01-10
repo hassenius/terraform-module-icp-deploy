@@ -43,7 +43,8 @@ If the default SSH user is not the root user, the default user must have passwor
 |docker_image_name   |docker-ce      |No      |Name of docker image to install when installing from Ubuntu or Centos repository |
 |docker_version      |latest         |No      |Version of docker image to install from Ubuntu or Centos repository. i.e. `18.06.1` `latest` install latest version. |
 |image_location      |             |No      |Location of image file. Start with `nfs:` or `http` to indicate protocol to download with. See example below |
-|image_location_user |  | No |Username if authentication required for image_location |
+|image_locations     |  | No | List of images in same format as `image_location`. Typically used for multi-arch deployments |
+|image_location_user |  | No | Username if authentication required for image_location |
 |image_location_pass |  | No | Password if authentication required for image_location |
 
 ## Outputs
@@ -301,6 +302,9 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 
 ### Versions and changes
+#### 3.0.1
+- Fix local-hook issue
+
 #### 3.0.0
 - Retire parallel image pull
 - Retire unused variables (enterprise-edition, image_file, ssh_key, ssh_key_file)

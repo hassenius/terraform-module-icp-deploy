@@ -302,6 +302,9 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 
 ### Versions and changes
+#### 3.0.2
+- Fix remote hook issue
+- 
 #### 3.0.1
 - Fix local-hook issue
 

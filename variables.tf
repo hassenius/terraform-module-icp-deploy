@@ -124,11 +124,11 @@ variable "hooks" {
   description = "Hooks into different stages in the cluster setup process; each must be a list"
   type        = "map"
   default     = {
-    cluster-preconfig  = "[echo -n]"
-    cluster-postconfig = "[echo -n]"
-    boot-preconfig     = "[echo -n]"
-    preinstall         = "[echo -n]"
-    postinstall        = "[echo -n]"
+    cluster-preconfig  = ["echo -n"]
+    cluster-postconfig = ["echo -n"]
+    boot-preconfig     = ["echo -n"]
+    preinstall         = ["echo -n"]
+    postinstall        = ["echo -n"]
   }
 }
 

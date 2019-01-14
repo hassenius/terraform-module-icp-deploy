@@ -43,7 +43,9 @@ if not 'ansible_user' in config_o and getpass.getuser() != 'root':
   config_o['ansible_become'] = True
 
 # Detect if a default admin password has been provided by user, set the terraform generated password if not
-if 'default_admin_password' not in config_f and 'default_admin_password' not in config_i:
+if ((not 'default_admin_password' in config_f and
+    not 'default_admin_password' in config_i) or
+        config_o['default_admin_password'] == ''):
     config_o['default_admin_password'] = sys.argv[2]
 
 # to handle terraform bug regarding booleans, we must parse dictionaries to find strings "true" or "false"

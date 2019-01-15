@@ -23,6 +23,10 @@ output "cluster_ips" {
   value = "${local.icp-ips}"
 }
 
+locals {
+  default_admin_password = "${lookup(var.icp_configuration, "default_admin_password", random_string.generated_password.result)}"
+}
+
 output "default_admin_password" {
-  value = "${lookup(var.icp_configuration, "default_admin_password", random_string.generated_password.result)}"
+  value = "${local.default_admin_password != "" ? local.default_admin_password : random_string.generated_password.result}"
 }

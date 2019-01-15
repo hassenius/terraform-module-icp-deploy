@@ -302,6 +302,9 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 
 ### Versions and changes
+#### 3.0.4
+- Fix default_admin_password output when provided as empty string in icp_config
+ 
 #### 3.0.3
 - Fix blank icp_configuration["default_admin_password"] not generating random password
 

@@ -302,6 +302,9 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 
 ### Versions and changes
+#### 3.0.6
+- Fix verbose installation option
+
 #### 3.0.5
 - Fix docker install on ppc64le and s390x
 

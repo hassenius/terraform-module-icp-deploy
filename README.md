@@ -302,6 +302,9 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 
 ### Versions and changes
+#### 3.0.7
+- Fix password length to comply with ICP 3.1.2 password rules
+
 #### 3.0.6
 - Fix verbose installation option
 

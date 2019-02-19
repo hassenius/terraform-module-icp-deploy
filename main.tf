@@ -6,7 +6,7 @@ resource "tls_private_key" "icpkey" {
 
 # Generate a random string for password if required
 resource "random_string" "generated_password" {
-  length            = "16"
+  length            = "32"
   special           = "false"
 }
 

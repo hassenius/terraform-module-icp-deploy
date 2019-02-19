@@ -302,6 +302,9 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 
 ### Versions and changes
+#### 3.0.8
+- Fix docker install from yum repo for non-root user on RHEL
+
 #### 3.0.7
 - Fix password length to comply with ICP 3.1.2 password rules
 

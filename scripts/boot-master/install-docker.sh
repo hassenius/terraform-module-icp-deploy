@@ -32,7 +32,7 @@ function rhel_docker_install {
   echo "Update RedHat or CentOS with latest patches"
 
   # Add the Extra Repo from RedHat to be able to support extra tools that needed
-  subscription-manager repos --enable=rhel-7-server-extras-rpms
+  sudo subscription-manager repos --enable=rhel-7-server-extras-rpms
   sudo yum update -y
 
   # Installing nesscarry tools for ICP to work including Netstat for tracing

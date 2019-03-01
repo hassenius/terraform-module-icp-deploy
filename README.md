@@ -45,7 +45,7 @@ If the default SSH user is not the root user, the default user must have passwor
 |docker_package_location|               |No      |http or nfs location of docker installer which ships with ICP. Typically used for RHEL which does not support docker-ce|
 |docker_image_name   |docker-ce      |No      |Name of docker image to install when installing from Ubuntu or Centos repository |
 |docker_version      |latest         |No      |Version of docker image to install from Ubuntu or Centos repository. i.e. `18.06.1` `latest` install latest version. |
-|image_location      |             |No      |Location of image file. Start with `nfs:` or `http` to indicate protocol to download with. See example below |
+|image_location      |             |No      |Location of image file. Start with `nfs:` or `http` to indicate protocol to download with. Starting with `/` indicates local file. See example below |
 |image_locations     |  | No | List of images in same format as `image_location`. Typically used for multi-arch deployments |
 |image_location_user |  | No | Username if authentication required for image_location |
 |image_location_pass |  | No | Password if authentication required for image_location |
@@ -267,6 +267,37 @@ module "icpprovision" {
 }
 ```
 
+Load tarball already existing on the boot node.
+
+```hcl
+module "icpprovision" {
+    source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=3.1.0"
+
+    icp-master = ["${softlayer_virtual_guest.icpmaster.ipv4_address}"]
+    icp-worker = ["${softlayer_virtual_guest.icpworker.*.ipv4_address}"]
+    icp-proxy  = ["${softlayer_virtual_guest.icpproxy.*.ipv4_address}"]
+
+    image_location = "/opt/ibm/cluster/images/ibm-cloud-private-x86_64-3.1.2.tar.gz"
+
+
+    cluster_size  = "${var.master["nodes"] + var.worker["nodes"] + var.proxy["nodes"]}"
+
+    icp_configuration = {
+      "network_cidr"              = "192.168.0.0/16"
+      "service_cluster_ip_range"  = "172.16.0.1/24"
+      "default_admin_password"    = "My0wnPassw0rd"
+    }
+
+    generate_key = true
+
+    ssh_user       = "ubuntu"
+    ssh_key_base64 = "${base64encode(file("~/.ssh/id_rsa"))}"
+
+}
+```
+
+
+
 There are several examples for different providers available from [IBM Cloud Architecture Solutions Group github page](https://github.com/ibm-cloud-architecture)
 - [ICP on SoftLayer](https://github.com/ibm-cloud-architecture/terraform-icp-softlayer)
 - [ICP on VMware](https://github.com/ibm-cloud-architecture/terraform-icp-vmware)
@@ -305,10 +336,12 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 
 ### Versions and changes
+#### 3.1.0
 - Allow cluster directory to be specified
 - Allow other targets to be called from `icp-inception`
 - Fix issues when owner of cluster files are something other than `ssh_user`
 - Allow the cluster directory to be owned by arbitrary user after install
+- Accept local files as valid location for `image_location`
 
 #### 3.0.8
 - Fix docker install from yum repo for non-root user on RHEL

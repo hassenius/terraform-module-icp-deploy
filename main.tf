@@ -74,7 +74,7 @@ resource "null_resource" "icp-docker" {
     inline = [
       "mkdir -p /tmp/icp-bootmaster-scripts",
       "sudo mkdir -p /opt/ibm/cluster",
-      "sudo chown ${var.ssh_user} /opt/ibm/cluster"
+      "sudo chown -R ${var.ssh_user} /opt/ibm"
     ]
   }
 
@@ -168,7 +168,6 @@ resource "null_resource" "icp-config" {
   provisioner "remote-exec" {
     inline = [
       "/tmp/icp-bootmaster-scripts/copy_cluster_skel.sh ${var.icp-inception == "" ? "" : " -v ${var.icp-inception}"}",
-      "sudo chown ${var.ssh_user} /opt/ibm/cluster/*",
       "chmod 600 /opt/ibm/cluster/ssh_key",
       "python /tmp/icp-bootmaster-scripts/load-config.py ${var.config_strategy} ${random_string.generated_password.result}"
     ]
@@ -292,10 +291,28 @@ resource "null_resource" "icp-worker-scaler" {
   provisioner "remote-exec" {
     inline = [
       "chmod a+x /tmp/icp-bootmaster-scripts/scaleworkers.sh",
+      "sudo chown ${var.ssh_user}:${var.ssh_user} -R /opt/ibm/cluster/",
       "/tmp/icp-bootmaster-scripts/scaleworkers.sh ${var.icp-inception}"
+      "sudo chown ${local.cluster_dir_owner}:${local.cluster_dir_owner} -R /opt/ibm/cluster/",
     ]
   }
+}
 
+resource "null_resource" "icp-cluster-owner" {
+  depends_on = ["null_resource.icp-worker-scaler", "null_resource.icp-postinstall-hook-continue-on-fail", "null_resource.icp-postinstall-hook-stop-on-fail"]
 
+  # Change the owner of the cluster directory to the desired user
+  connection {
+    host          = "${local.boot-node}"
+    user          = "${var.ssh_user}"
+    private_key   = "${local.ssh_key}"
+    agent         = "${var.ssh_agent}"
+    bastion_host  = "${var.bastion_host}"
+  }
 
+  provisioner "remote-exec" {
+    inline = [
+      "sudo chown ${local.cluster_dir_owner}:${local.cluster_dir_owner} -R /opt/ibm/cluster/",
+    ]
+  }
 }

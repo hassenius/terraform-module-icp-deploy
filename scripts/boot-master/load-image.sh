@@ -30,8 +30,13 @@ for image_location in ${locations[@]} ; do
   imagedir=${cluster_dir}/images
   ensure_directory_reachable ${imagedir}
 
-  # Detect which protocol to use
-  if [[ "${image_location:0:4}" == "http" ]]; then
+  # Detect if image is local, or else which protocol to use
+  if [[ "${image_location}" == "/" ]]; then
+    # Tarball already exists locally, use that directly
+    echo "${image_location} is deemed to be local, setting image_file"
+    image_file=${image_location}
+
+  elif [[ "${image_location:0:4}" == "http" ]]; then
     # Extract filename from URL if possible
     if [[ "${image_location: -2}" == "gz" ]]; then
       # Assume a sensible filename can be extracted from URL

@@ -58,3 +58,14 @@ load helpers
 
   [ $status -gt 0 ]
 }
+
+@test "Locally existing image tarball" {
+  # Just needs to be a file that exists since tar is faked
+  run run_in_docker \
+  -i ${IMAGE} \
+  -s "/tmp/icp-bootmaster-scripts/load-image.sh" \
+  -p "-l /tmp/icp-bootmaster-scripts/load-image.sh -d /opt/ibm/cluster" \
+  -f "sudo:docker:tar"
+
+  [ $status -eq 0 ]
+}

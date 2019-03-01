@@ -6,58 +6,29 @@ exec > >(tee -a ${LOGFILE} >/dev/null) 2> >(tee -a ${LOGFILE} >&3)
 echo "Got the parameters $@"
 # Defaults
 source /tmp/icp-bootmaster-scripts/functions.sh
-sourcedir=/opt/ibm/cluster/images
+source /tmp/icp-bootmaster-scripts/get-args.sh
 declare -a locations
 
-# Parse options
-while getopts ":l:i:s:u:p:" opt; do
-  case $opt in
-    l)
-      locations+=( ${OPTARG} )
-      ;;
-    u)
-      username=${OPTARG}
-      ;;
-    p)
-      password=${OPTARG}
-      ;;
-    i)
-      image=${OPTARG}
-      ;;
-    s)
-      echo "Will overwrite default sourcedir to ${OPTARG}"
-      sourcedir=${OPTARG}
-      ;;
-    \?)
-      echo "Invalid option : -$OPTARG in commmand $0 $*" >&2
-      exit 1
-      ;;
-    :)
-      echo "Missing option argument for -$OPTARG in command $0 $*" >&2
-      exit 1
-      ;;
-  esac
-done
+
+
 
 # Figure out the version
 # This will populate $org $repo and $tag
-parse_icpversion ${image}
+parse_icpversion ${icp_inception}
 echo "registry=${registry:-not specified} org=$org repo=$repo tag=$tag"
 
-# Make sure sourcedir exists, in case we need to donwload some archives
-sudo mkdir -p ${sourcedir}
-sudo chown $(whoami):$(whoami) ${sourcedir}
-
-if [[ ! -z ${image} ]]; then
+if [[ ! -z ${icp_inception} ]]; then
   # Figure out the version
   # This will populate $org $repo and $tag
-  parse_icpversion ${image}
+  parse_icpversion ${icp_inception}
   echo "registry=${registry:-not specified} org=$org repo=$repo tag=$tag"
 fi
 
 # Allow downloading multiple tarballs,
 # which is required in multi-arch deployments
 for image_location in ${locations[@]} ; do
+  imagedir=${cluster_dir}/images
+  ensure_directory_reachable ${imagedir}
 
   # Detect which protocol to use
   if [[ "${image_location:0:4}" == "http" ]]; then
@@ -78,7 +49,7 @@ for image_location in ${locations[@]} ; do
     echo "Downloading ${image_location}" >&2
     echo "This can take a very long time" >&2
     wget -nv --continue ${username:+--user} ${username} ${password:+--password} ${password} \
-     -O ${sourcedir}/${filename} "${image_location}"
+     -O ${imagedir}/${filename} "${image_location}"
 
     if [[ $? -gt 0 ]]; then
       echo "Error downloading ${image_location}" >&2
@@ -87,17 +58,16 @@ for image_location in ${locations[@]} ; do
 
     # Set the image file name if we're on the same platform
     if [[ ${filename} =~ .*$(uname -m).* ]]; then
-      echo "Setting image_file to ${sourcedir}/${filename}"
-      image_file="${sourcedir}/${filename}"
+      echo "Setting image_file to ${imagedir}/${filename}"
+      image_file="${imagedir}/${filename}"
     fi
   else
     # Assume NFS since this is the only other supported protocol
     # Separate out the filename and path
     nfs_mount=$(dirname ${image_location})
-    image_file="${sourcedir}/$(basename ${image_location})"
-    mkdir -p ${sourcedir}
+    image_file="${imagedir}/$(basename ${image_location})"
     # Mount
-    sudo mount.nfs $nfs_mount $sourcedir
+    sudo mount.nfs $nfs_mount $imagedir
 
   fi
 done

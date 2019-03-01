@@ -57,6 +57,23 @@ resource "null_resource" "icp-cluster" {
 
 ## icp-boot-preconfig hooks are run before icp-docker, if defined
 
+# To make script parameters more consistent we'll define a common set here
+locals {
+  script_options = "${join(" -", list(""), compact(list(
+    var.icp-inception           == "" ? "" : "i ${var.icp-inception}",
+    var.cluster-directory       == "" ? "" : "d ${var.cluster-directory}",
+    var.install-verbosity       == "" ? "" : "l ${var.install-verbosity}",
+    var.install-command         == "" ? "" : "c ${var.install-command}",
+    var.image_location_user     == "" ? "" : "u ${var.image_location_user}",
+    var.image_location_pass     == "" ? "" : "p ${var.image_location_pass}",
+    var.image_location          == "" ? "" : "l ${var.image_location}",
+    length(var.image_locations) == 0  ? "" : "l ${join(" -l ", var.image_locations )}",
+    var.docker_package_location == "" ? "" : "o ${var.docker_package_location}",
+    var.docker_image_name       == "" ? "" : "k ${var.docker_image_name}",
+    var.docker_version          == "" ? "" : "s ${var.docker_version}"
+  )))}"
+}
+
 resource "null_resource" "icp-docker" {
   depends_on = ["null_resource.icp-boot-preconfig-continue-on-fail", "null_resource.icp-boot-preconfig-stop-on-fail", "null_resource.icp-cluster"]
 
@@ -68,13 +85,10 @@ resource "null_resource" "icp-docker" {
     agent         = "${var.ssh_agent}"
     bastion_host  = "${var.bastion_host}"
   }
-
-
+  
   provisioner "remote-exec" {
     inline = [
-      "mkdir -p /tmp/icp-bootmaster-scripts",
-      "sudo mkdir -p /opt/ibm/cluster",
-      "sudo chown -R ${var.ssh_user} /opt/ibm"
+      "mkdir -p /tmp/icp-bootmaster-scripts"
     ]
   }
 
@@ -87,20 +101,9 @@ resource "null_resource" "icp-docker" {
   provisioner "remote-exec" {
     inline = [
       "chmod a+x /tmp/icp-bootmaster-scripts/*.sh",
-      "/tmp/icp-bootmaster-scripts/install-docker.sh ${var.docker_package_location != "" ? "-p \"${var.docker_package_location}\"" : ""} ${var.docker_image_name != "" ? "-i ${var.docker_image_name}" : ""} ${var.docker_version != "" ? "-v ${var.docker_version}" : ""}"
+      "/tmp/icp-bootmaster-scripts/install-docker.sh ${local.script_options}"
     ]
   }
-}
-
-# To make image-load more readable we'll do some interpolations here
-locals {
-  load_image_options = "${join(" -", list(""), compact(list(
-    var.icp-inception         == "" ? "" : "i ${var.icp-inception}",
-    var.image_location_user == "" ? "" : "u ${var.image_location_user}",
-    var.image_location_pass == "" ? "" : "p ${var.image_location_pass}",
-    var.image_location      == "" ? "" : "l ${var.image_location}",
-    length(var.image_locations) == 0 ? "" : "l ${join(" -l ", var.image_locations )}"
-  )))}"
 }
 
 resource "null_resource" "icp-image" {
@@ -118,7 +121,7 @@ resource "null_resource" "icp-image" {
   provisioner "remote-exec" {
     inline = [
       "echo \"Loading image ${var.icp-inception} ${var.image_location}\"",
-      "/tmp/icp-bootmaster-scripts/load-image.sh ${local.load_image_options}"
+      "/tmp/icp-bootmaster-scripts/load-image.sh ${local.script_options}"
     ]
   }
 }
@@ -167,27 +170,26 @@ resource "null_resource" "icp-config" {
 
   provisioner "remote-exec" {
     inline = [
-      "/tmp/icp-bootmaster-scripts/copy_cluster_skel.sh ${var.icp-inception == "" ? "" : " -v ${var.icp-inception}"}",
-      "chmod 600 /opt/ibm/cluster/ssh_key",
-      "python /tmp/icp-bootmaster-scripts/load-config.py ${var.config_strategy} ${random_string.generated_password.result}"
+      "/tmp/icp-bootmaster-scripts/copy_cluster_skel.sh ${local.script_options}",
+      "python /tmp/icp-bootmaster-scripts/load-config.py ${var.cluster-directory} ${var.config_strategy} ${random_string.generated_password.result}"
     ]
   }
 
   # Copy the provided or generated private key
   provisioner "file" {
       content = "${var.generate_key ? tls_private_key.icpkey.private_key_pem : var.icp_priv_key}"
-      destination = "/opt/ibm/cluster/ssh_key"
+      destination = "${var.cluster-directory}/ssh_key"
   }
-
 
   # Since the file provisioner deals badly with empty lists, we'll create the optional management nodes differently
   # Later we may refactor to use this method for all node types for consistency
   provisioner "remote-exec" {
     inline = [
-      "echo -n ${join(",", var.icp-master)} > /opt/ibm/cluster/masterlist.txt",
-      "echo -n ${join(",", var.icp-proxy)} > /opt/ibm/cluster/proxylist.txt",
-      "echo -n ${join(",", var.icp-worker)} > /opt/ibm/cluster/workerlist.txt",
-      "echo -n ${join(",", var.icp-management)} > /opt/ibm/cluster/managementlist.txt"
+      "chmod 600 ${var.cluster-directory}/cluster/ssh_key",
+      "echo -n ${join(",", var.icp-master)} > ${var.cluster-directory}/masterlist.txt",
+      "echo -n ${join(",", var.icp-proxy)} > ${var.cluster-directory}/proxylist.txt",
+      "echo -n ${join(",", var.icp-worker)} > ${var.cluster-directory}/workerlist.txt",
+      "echo -n ${join(",", var.icp-management)} > ${var.cluster-directory}/managementlist.txt"
     ]
   }
 
@@ -222,13 +224,6 @@ resource "null_resource" "icp-generate-hosts-files" {
 
 # Boot node and local hooks are run before install if defined
 
-# To make install options more readable we'll do some interpolations here
-locals {
-  install_options = "${join(" -", list(""), compact(list(
-    var.icp-inception       == "" ? "" : "v ${var.icp-inception}",
-    var.install-verbosity == "" ? "" : "l ${var.install-verbosity}"
-  )))}"
-}
 # Start the installer
 resource "null_resource" "icp-install" {
   depends_on = ["null_resource.local-preinstall-hook-continue-on-fail", "null_resource.local-preinstall-hook-stop-on-fail", "null_resource.icp-generate-hosts-files"]
@@ -245,7 +240,7 @@ resource "null_resource" "icp-install" {
 
   provisioner "remote-exec" {
     inline = [
-      "/tmp/icp-bootmaster-scripts/start_install.sh ${local.install_options}"
+      "/tmp/icp-bootmaster-scripts/start_install.sh ${local.script_options}"
     ]
   }
 }
@@ -291,9 +286,9 @@ resource "null_resource" "icp-worker-scaler" {
   provisioner "remote-exec" {
     inline = [
       "chmod a+x /tmp/icp-bootmaster-scripts/scaleworkers.sh",
-      "sudo chown ${var.ssh_user}:${var.ssh_user} -R /opt/ibm/cluster/",
-      "/tmp/icp-bootmaster-scripts/scaleworkers.sh ${var.icp-inception}"
-      "sudo chown ${local.cluster_dir_owner}:${local.cluster_dir_owner} -R /opt/ibm/cluster/",
+      "sudo chown ${var.ssh_user}:${var.ssh_user} -R ${var.cluster-directory}",
+      "/tmp/icp-bootmaster-scripts/scaleworkers.sh ${var.icp-inception}",
+      "sudo chown ${local.cluster_dir_owner}:${local.cluster_dir_owner} -R ${var.cluster-directory}"
     ]
   }
 }
@@ -312,7 +307,7 @@ resource "null_resource" "icp-cluster-owner" {
 
   provisioner "remote-exec" {
     inline = [
-      "sudo chown ${local.cluster_dir_owner}:${local.cluster_dir_owner} -R /opt/ibm/cluster/",
+      "sudo chown ${local.cluster_dir_owner}:${local.cluster_dir_owner} -R ${var.cluster-directory}",
     ]
   }
 }

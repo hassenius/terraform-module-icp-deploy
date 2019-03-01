@@ -33,6 +33,8 @@ If the default SSH user is not the root user, the default user must have passwor
 |local-hooks         | |No      |Locally run hooks at different stages in the cluster setup process. See below for details|
 |on_hook_failure     |fail  |    |Behavior when hooks fail. Anything other than `fail` will `continue`|
 |install-verbosity   | |No      | Verbosity of the icp ansible installer. -v to -vvvv. See ansible documentation for verbosity information |
+|install-command     |install |No      | Installer command to run |
+|cluster-directory   |/opt/ibm/cluster |No      | Location to use for the cluster directory |
 |cluster_dir_owner   |               |No      |Username to own cluster directory after an install. Defaults to `ssh_user`|
 | **Terraform to cluster ssh configuration**|
 |ssh_user            |root           |No      |Username for Terraform to ssh into the ICP cluster. This is typically the default user with for the relevant cloud vendor|
@@ -303,6 +305,8 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 
 ### Versions and changes
+- Allow cluster directory to be specified
+- Allow other targets to be called from `icp-inception`
 - Fix issues when owner of cluster files are something other than `ssh_user`
 - Allow the cluster directory to be owned by arbitrary user after install
 

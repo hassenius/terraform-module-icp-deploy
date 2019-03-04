@@ -336,6 +336,10 @@ To avoid breaking existing templates which depends on the module it is recommend
 
 
 ### Versions and changes
+#### 3.1.1
+- Fix issues with offline install
+- Fix issue with config generation
+
 #### 3.1.0
 - Allow cluster directory to be specified
 - Allow other targets to be called from `icp-inception`
